@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="ja" data-theme="dark">
+<head>
+<script>
+window.__APP=1;
+(function(){ var A=parent.__app;
+  function mk(ok,ng){ return new Proxy({}, { get:function(_,fn){
+    if(fn==='withSuccessHandler') return function(h){ return mk(h,ng); };
+    if(fn==='withFailureHandler') return function(h){ return mk(ok,h); };
+    return function(){ var a=[].slice.call(arguments); A.call(String(fn),a).then(function(r){ if(ok) ok(r); },function(e){ if(ng) ng(e); }); }; } }); }
+  window.google={ script:{ run:mk(null,null) } };
+  window.__appReload=function(){ A.refresh(true); };
+  window.__appUpdate=function(){ A.update(); };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>すっきりナビ</title>
+<!-- 第47版：案件のタブの画面（古い画面 index.html から写して組み直した。10/15 から画面はこれだけ）。もとは 朝のペライチ（Googleのページ）第1版：asa-no-ichimai 固定ひな型 第31版をもとに、完了の記録とClaudeの呼び出しだけをGoogle用に入れ替えた。中身（DATA）はドライブのファイルから入る -->
+<script>document.documentElement.setAttribute("data-theme","dark");</script>
+<script>
+// 第9版：画面の組み立てが途中で止まったら、白紙にせず、日本語で知らせる（10/5：仕組みの文は出さず、記録だけ社長に残す）
+window.addEventListener('error',function(e){ try{ if(window.__ERRSHOWN) return; window.__ERRSHOWN=1; var d=document.createElement('div'); d.style.cssText='color:#FF6680;font-size:14px;padding:12px 16px;white-space:pre-wrap';
+  d.textContent='※画面の一部を出せませんでした。「更新」を押しても出るときは、社長に知らせてください'; (document.getElementById('page')||document.body).appendChild(d);
+  if(window.google&&google.script) google.script.run.logClientError(String(e.message||'')+' @'+(e.lineno||'')); }catch(x){} });
+// 10/5：失敗の理由は、日本語の案内にそろえる（英語の文はそのまま出さない。元の文は記録に残す）
+// 画面全体を読み直す（Googleの枠の中から location.reload すると白い画面になることがあるので、いちばん外の窓で開き直す）
+window.reloadTop=function(){ if(window.__appReload) return window.__appReload(); var a=document.createElement('a'); a.href=window.__URL||''; a.target='_top'; if(a.href){ document.body.append(a); a.click(); } else location.reload(); };
+window.niceErr=function(e){ var m=String((e&&(e.message||e.code))||e||'').replace(/^(Error|Exception|例外)[:：]\s*/,'');
+  try{ if(window.google&&google.script) google.script.run.logClientError('ボタン：'+m.slice(0,180)); }catch(x){}
+  if(/[ぁ-んァ-ヶ一-龠]/.test(m) && !/Exception|TypeError|ReferenceError|undefined|null|line \d/i.test(m)) return m;
+  if(/timeout|timed out|deadline/i.test(m)) return '時間がかかりすぎました。少したってから、もう一度押してください';
+  return '通信がうまくいきませんでした。電波のよい所で、もう一度押してください'; };
+</script>
+<style>
+:root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+ --bg:#EEF0F4; --card:#fff; --ink:#1B1F2E; --sub:#5A6072; --faint:#8E94A4; --line:#E1E4EB;
+ --decide:#E07A45; --do:#3B7DDD; --wait:#C9962E; --worry:#9A6BD6; --hot:#D6334F;
+ --c-line:#06A948; --c-mail:#E0473A; --c-cal:#3B7DDD; --link:#3B6FD1; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F1117; --card:#1A1D26; --ink:#EEF0F5; --sub:#AEB4C3; --faint:#7C8394; --line:#22252E; --c-line:#35D07A; --c-mail:#FF7A6B; --c-cal:#7FAEFF; --link:#8FB5FF; --hot:#FF6680; }}
+:root[data-theme="dark"]{ color-scheme:dark; --bg:#0F1117; --card:#1A1D26; --ink:#EEF0F5; --sub:#AEB4C3; --faint:#7C8394; --line:#22252E; --c-line:#35D07A; --c-mail:#FF7A6B; --c-cal:#7FAEFF; --link:#8FB5FF; --hot:#FF6680; }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--ink); font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif; font-size:17px; line-height:1.6; -webkit-text-size-adjust:100%; }
+.page{ max-width:720px; margin:0 auto; padding:14px 12px 40px; }
+.top{ padding:6px 4px 14px; border-bottom:2px solid var(--do); margin-bottom:16px; }
+.top .kicker{ font-size:15px; color:var(--sub); font-weight:700; }
+.top h1{ font-size:28px; margin:0; letter-spacing:.02em; }
+.top .sub{ font-size:15px; color:var(--sub); }
+.top .today{ font-size:18px; font-weight:700; margin-top:8px; }
+.hint.hl{ display:flex; align-items:center; gap:8px; } .hint.hl span{ flex:1; min-width:0; } .hdone{ flex:none; font:inherit; font-size:13px; padding:3px 10px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ink); cursor:pointer; }
+.newsmore{ margin-top:8px; } .newsmore summary{ cursor:pointer; color:var(--faint); font-size:14px; padding:6px 0; }
+:root{ --c-todo:#262B3A; --c-worry:#1F2230; --c-wait:#191B24; }   /* 第36版（10/8 社長）：欄ごとに背景の濃さを変える。明るさ 対応 約19%・懸念 約16%・任せた 約12%（画面の地 約7%） */
+:root:not([data-theme="dark"]){ --c-todo:#FFFFFF; --c-worry:#F5F6F9; --c-wait:#E9EBF0; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --c-todo:#262B3A; --c-worry:#1F2230; --c-wait:#191B24; }}
+.card.new{ background:var(--c-todo); } .card.worry{ background:var(--c-worry); } .card.wait{ background:var(--c-wait); }
+h2.s-todo,h2.s-worry,h2.s-wait{ margin:26px 0 10px; padding:8px 12px; border-radius:10px; }
+h2.s-todo,h2.s-worry,h2.s-wait,h2.gn-h{ font-size:24px; } h2.s-todo small,h2.s-worry small,h2.s-wait small,h2.gn-h small{ font-size:20px; color:var(--ink); font-weight:700; } h2.s-todo{ background:var(--c-todo); }
+h2.s-worry{ background:var(--c-worry); } h2.s-wait{ background:var(--c-wait); }
+.hotmk{ color:var(--hot); font-size:13px; font-weight:700; }
+.tri .tb{ font-size:11px; letter-spacing:-.02em; overflow:hidden; text-overflow:ellipsis; min-width:0; } .tb.more2{ flex:0 0 auto; padding:4px 7px; color:var(--link,#6FA8FF); border-color:var(--line); }
+.morebox .mtop{ font-size:13.5px; color:var(--sub); margin:2px 0 4px; }
+.donefold{ margin:18px 0 8px; } .donefold > summary{ cursor:pointer; font-size:15px; font-weight:700; color:var(--sub); padding:8px 4px; }
+.donefold .news{ font-size:14px; } .sysw > summary{ font-weight:400; font-size:13px; color:var(--faint); }
+h2{ font-size:18px; margin:22px 4px 10px; } h2 small{ font-size:15px; color:var(--faint); font-weight:400; margin-left:6px; }
+.card{ background:var(--card); border:1px solid var(--line); border-left:5px solid var(--decide); border-radius:10px; padding:12px 14px 10px; margin-bottom:10px; }
+.card.do{ border-left-color:var(--do); } .card.wait{ border-left-color:var(--wait); } .card.worry{ border-left-color:var(--worry); }
+.head{ display:flex; gap:8px; align-items:flex-start; }
+.bdg{ flex:none; font-size:14.5px; font-weight:700; border:1.5px solid; border-radius:5px; padding:0 7px; line-height:1.7; margin-top:2px; }
+.bdg.line{ color:var(--c-line); } .bdg.mail{ color:var(--c-mail); } .bdg.cal{ color:var(--c-cal); }
+.title{ flex:1; font-size:16px; font-weight:700; line-height:1.5; }
+.done{ flex:none; font-size:14px; color:var(--sub); border:1px solid var(--line); border-radius:99px; padding:3px 12px; text-decoration:none; margin-left:4px; }
+.done::before{ content:"✓ "; }
+.detail{ color:var(--sub); font-size:16px; margin-top:6px; }
+.meta{ display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; margin-top:8px; font-size:15px; }
+.due{ font-weight:700; font-size:14.5px; border-radius:5px; padding:0 7px; }
+.due.hot{ background:var(--hot); color:#fff; } .due.soon{ color:var(--wait); border:1px solid var(--wait); } .due.none{ color:var(--faint); border:1px solid var(--line); }
+a.src{ color:var(--link); text-decoration:none; }
+.choices{ display:flex; gap:6px; margin-top:6px; } .choices span{ font-size:14px; border:1px solid var(--line); border-radius:99px; padding:0 10px; }
+details{ margin-top:6px; } summary{ font-size:14.5px; font-weight:700; color:var(--link); cursor:pointer; }
+pre{ white-space:pre-wrap; font-family:inherit; font-size:16px; background:var(--bg); border-radius:8px; padding:10px; margin:6px 0 0; }
+.box{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+.day{ padding:8px 0; border-top:1px solid var(--line); } .day:first-child{ border-top:none; }
+.dayname{ font-weight:700; } .busy{ color:var(--hot); font-size:14.5px; margin-left:8px; }
+.ev{ display:flex; gap:10px; font-size:16.5px; } .ev .t{ flex:none; width:44px; color:var(--sub); }
+.ev a{ color:var(--ink); text-decoration:none; border-bottom:1px dotted var(--faint); } .ev small{ color:var(--sub); }
+.news{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-top:1px solid var(--line); font-size:16px; }
+.news > div{ flex:1; min-width:0; } .news .bdg{ align-self:flex-start; min-width:3.9em; text-align:center; }
+.todaysched .lbl{ font-size:14px; color:var(--faint); font-weight:700; } .news:first-child{ border-top:none; }
+.news .meta{ margin-top:2px; } .tagdone{ font-size:13.5px; color:var(--faint); border:1px solid var(--line); border-radius:4px; padding:0 5px; }
+.todaysched{ margin-top:10px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 12px; }
+.todaysched .ev{ padding:2px 0; }
+.bar{ transition:transform .2s ease; } .bar.hid{ transform:translateY(-100%); }   /* 第48版（10/11 社長）：下へ読み進めると上の帯は隠れ、少し戻すと出る */
+@media (prefers-reduced-motion: reduce){ .bar,.n-tbw,.n-sb{ transition:none; } }
+html.zoomed .bar{ width:100vw; box-sizing:border-box; }   /* 第48版：拡大して横に動かしても、上の帯は画面に残す */
+@media print{ body{ background:#fff; } .card,.box{ break-inside:avoid; } @page{ size:A4; margin:10mm; } }
+
+.card.new{ border-left-color:#8E94A4; }
+.tri{ display:flex; gap:5px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); }
+.tri > *{ flex:1 1 0; min-width:0; }
+.tb{ font:inherit; font-size:12px; font-weight:700; text-decoration:none; border-radius:7px; padding:4px 0; border:1.2px solid; text-align:center; white-space:nowrap; background:transparent; cursor:pointer; }
+.tb.think{ color:#B58CF0; } .tb.give{ color:var(--wait); } .tb.reply{ color:var(--do); } .tb.done2{ color:var(--c-line); }
+.tb.on{ background:var(--bg); }
+.panel{ max-height:0; overflow:hidden; opacity:0; margin-top:0; transition:max-height .35s ease, opacity .25s ease, margin-top .35s ease; }
+.panel.show{ max-height:640px; opacity:1; margin-top:8px; }
+.plabel{ font-size:14px; color:var(--faint); }
+.allask{ margin-top:8px; } .allbtns{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+.allbtns button{ flex:1 1 140px; font:inherit; font-size:14px; font-weight:700; padding:9px 10px; border-radius:8px; border:1.2px solid var(--c-line); background:transparent; color:var(--c-line); cursor:pointer; }
+.givesel{ width:100%; font:inherit; font-size:15px; padding:7px 10px; margin-top:6px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
+.copy{ font:inherit; font-size:12px; font-weight:700; margin-top:6px; padding:4px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; }
+.archive{ margin-top:22px; } .archive summary{ font-size:15px; color:var(--sub); }
+.archive .card{ opacity:.55; } .archive .tri{ display:none; } .archive .panel{ display:none !important; }
+.undo{ font:inherit; font-size:12px; font-weight:700; margin-top:8px; padding:4px 12px; border-radius:7px; border:1px solid var(--line); background:transparent; color:var(--sub); cursor:pointer; }
+.card.gone{ transition:opacity .25s, transform .25s; opacity:0; transform:translateX(24px); }
+.ver{ text-align:right; font-size:12px; color:var(--faint); margin-top:18px; }
+.ask{ display:flex; gap:6px; margin-top:8px; }
+.ask input{ flex:1; min-width:0; font:inherit; font-size:15px; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
+.ask button{ font:inherit; font-size:12px; font-weight:700; padding:4px 10px; border-radius:7px; border:1.2px solid #B58CF0; background:transparent; color:#B58CF0; cursor:pointer; white-space:nowrap; }
+.ask button:disabled{ opacity:.5; }
+.ans{ white-space:pre-wrap; font-size:15px; line-height:1.7; padding:10px 12px; border-radius:8px; background:var(--bg); }
+.ans .q{ color:var(--faint); font-size:13px; margin-top:8px; }
+.note{ font-size:12px; color:var(--faint); margin-top:4px; }
+.noai .ask:not(.donebox):not(.talk){ display:none; }
+.ask .doneok{ border-color:var(--c-line); color:var(--c-line); } .ask .doneok2{ border-color:var(--wait); color:var(--wait); }
+.memo{ margin-top:8px; font-size:14px; color:var(--sub); }
+.archive .memo{ display:block; }
+.lead{ color:var(--sub); font-size:15px; margin-top:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.morebtn{ font:inherit; font-size:13px; font-weight:700; color:var(--link,#6FA8FF); background:none; border:none; padding:4px 0; margin-top:2px; cursor:pointer; }
+.morebox{ max-height:0; overflow:hidden; opacity:0; transition:max-height .35s ease, opacity .25s ease; }
+.morebox.show{ max-height:none; opacity:1; }
+.tb.thinkin{ display:inline-block; width:auto; padding:4px 14px; margin-top:8px; }
+.morebox .body.sum{ white-space:normal; }
+.sum-next{ border-left:4px solid var(--c-line); border-radius:6px; padding:6px 10px; margin-bottom:10px; background:var(--card, transparent); }
+.sum-next .lb{ display:block; font-size:12px; font-weight:700; color:var(--c-line); }
+.sum-next .tx{ font-size:15.5px; font-weight:700; line-height:1.6; }
+.sum-g{ display:grid; grid-template-columns:3.4em 1fr; gap:7px 10px; align-items:start; font-size:14.5px; line-height:1.65; }
+.sum-g .k{ font-size:11.5px; font-weight:700; color:var(--sub); border:1px solid var(--line); border-radius:5px; text-align:center; padding:1px 0; margin-top:2px; }
+.sum-r{ font-size:14px; margin-top:6px; }
+.morebox .body{ white-space:pre-wrap; font-size:15px; line-height:1.75; padding:10px 12px; margin-top:4px; border-radius:8px; background:var(--bg); }
+.morebox .meta{ margin-top:8px; }
+.news .morebtn{ margin-top:0; }
+.arcbtns{ display:flex; gap:6px; flex-wrap:wrap; }
+.panel.show{ max-height:4000px; }
+.ask.talk{ flex-direction:column; align-items:stretch; }
+.ask textarea{ width:100%; min-height:7.5em; font:inherit; font-size:17px; line-height:1.6; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); resize:vertical; }
+.ask.talk button{ align-self:flex-end; font-size:14px; padding:6px 18px; }
+.memo2{ white-space:pre-wrap; margin-top:2px; }
+/* Googleのページ：上に貼り付く帯（題名・更新時刻・更新ボタン） */
+.bar{ position:sticky; top:0; left:0; z-index:10; background:var(--bg); border-bottom:1px solid var(--line); }
+.testnote{ background:#1B1F2E; color:#FFD84D; font-size:12px; font-weight:700; text-align:center; line-height:1.5; padding:2px 8px; letter-spacing:.04em; }   /* 10/7 社長：運用開始までの表示。10/15になったら消す */
+.bar-in{ max-width:720px; margin:0 auto; padding:8px 16px; display:flex; align-items:center; gap:10px; }
+.bar-t{ flex:1; min-width:0; line-height:1.35; }
+.bar-t b{ display:block; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bar-t span{ font-size:13.5px; color:var(--sub); }
+.rel{ flex:none; font:inherit; font-size:14px; font-weight:700; color:var(--do); background:transparent; border:1.2px solid var(--do); border-radius:8px; padding:5px 14px; cursor:pointer; }
+.rel:disabled{ opacity:.55; }
+/* 第5版：一番上を3段（数字の札／まず：の1行／予定は1件1行） */
+.tiles{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px; }
+.tile{ font:inherit; display:flex; align-items:baseline; justify-content:center; gap:6px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 4px; color:var(--ink); cursor:pointer; white-space:nowrap; }
+.tile span{ order:1; font-size:14.5px; font-weight:600; color:var(--sub); }
+.tile b{ order:2; font-size:20px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+.tile.hot{ border-color:var(--hot); } .tile.hot b, .tile.hot span{ color:var(--hot); }
+.tile.zero b{ color:var(--faint); }
+@media (max-width:420px){ .tile{ gap:3px; flex-direction:column; align-items:center; padding:6px 2px; } .tile span{ font-size:12px; } .tile b{ font-size:18px; } }
+.first{ display:block; width:100%; text-align:left; font:inherit; margin-top:10px; background:var(--card); border:1px solid var(--line); border-left:4px solid var(--hot); border-radius:10px; padding:8px 12px; color:var(--ink); cursor:pointer; }
+.first .lbl{ font-size:13px; color:var(--hot); font-weight:700; margin-right:6px; }
+.first .ft{ font-size:16px; font-weight:700; }
+.first .fd{ font-size:13px; color:var(--sub); margin-left:6px; }
+.todaysched .ev .t{ font-variant-numeric:tabular-nums; }
+.todaysched .ev span:last-child{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.todaysched .ahead{ font-size:13.5px; color:var(--sub); margin-top:4px; }
+.todaysched .ahead b{ color:var(--hot); font-weight:700; }
+.inqline{ display:block; margin-top:8px; padding:9px 12px; border:1.5px solid var(--hot); border-radius:9px; font-size:15px; font-weight:700; color:inherit; text-decoration:none; } .inqline.err{ color:var(--hot); }
+.warnline{ font-size:13px; color:var(--hot); margin-top:8px; }
+.hint{ font-size:13.5px; color:var(--wait); margin-top:4px; }
+.relmsg{ max-width:720px; margin:0 auto; padding:0 16px 8px; font-size:13.5px; color:var(--sub); }
+.gn-err{ color:#ff6b6b; font-weight:600; font-size:13.5px; }
+.as{ margin-left:10px; font-size:13px; background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:2px 4px; }
+.groups{ font-size:13px; color:var(--faint); margin:18px 4px 0; } .groups summary{ cursor:pointer; }
+.gm{ padding:4px 0 2px; font-size:13px; line-height:1.45; color:var(--sub); } .gm-h{ font-size:11.5px; font-weight:700; color:var(--faint); margin:6px 0 1px; } .gm-ul{ margin:0; padding-left:1.1em; } .gm-ul li{ margin:0 0 1px; } .gm-ppl{ list-style:none; padding-left:0; } .gm-ppl b{ display:inline-block; min-width:3.6em; color:var(--text,#ddd); font-weight:700; }
+.gn-memo{ margin-top:8px; font-size:14px; } .gn-memo summary{ cursor:pointer; color:var(--link); } .gn-memotx{ white-space:pre-wrap; line-height:1.7; color:var(--sub); padding:6px 0 2px; }
+.relmsg.err{ color:#ff6b6b; font-weight:600; }
+.relmsg.busy::before{ content:''; display:inline-block; width:11px; height:11px; margin-right:6px; vertical-align:-1px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.relmsg a{ color:var(--accent,#3b6fd8); font-weight:700; }
+/* 第9版：現場の今（全案件同じ物差しの細い棒。色は緑→オレンジを見た目で等しく。現在地は赤い線） */
+.gn{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px 12px; margin-bottom:12px; text-align:left; }
+.gn-nm{ font-size:18px; font-weight:700; color:var(--ink); line-height:1.4; }
+.gn-nm b{ font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gn-new{ font-size:12.5px; color:var(--wait); margin-top:2px; }
+.gn-ph{ display:flex; gap:2px; font-size:12px; letter-spacing:-.02em; font-weight:700; color:var(--ink); margin:10px 0 5px; }
+.gn-ph span{ text-align:left; white-space:nowrap; }
+@media (max-width:480px){ .gn-ph{ font-size:10.5px; letter-spacing:-.04em; } .gn-row{ font-size:10px !important; letter-spacing:-.04em; } }
+.gn-bar{ position:relative; display:flex; gap:2px; height:4px; }
+.gn-bar > i{ border-radius:2px; height:100%; }
+.gn-ms{ position:absolute; top:0; bottom:0; width:2px; background:var(--card); }
+.gn-now{ position:absolute; top:-4px; height:12px; width:12px; background:#E24B4A; border:2px solid #FFD43B; border-radius:50%; box-shadow:0 0 0 1px var(--card); }   /* 第37版：今日は赤い丸（第37.2版：黄色い縁）*/
+.gn-ph .gn-hand{ position:absolute; right:0; top:0; font-weight:700; color:var(--ink); background:var(--card); padding-left:4px; } .gn-ph .gn-hand.un{ color:#E0A030; }
+.gn-row{ position:relative; height:16px; font-size:11.5px; color:var(--faint); margin-top:4px; }
+.gn-row span{ position:absolute; white-space:nowrap; }
+.gn-nohand{ text-align:right; margin-top:6px; } .gn-nohand{ color:#E0A030; font-size:13px; font-weight:700; } .gn-nohand.ok{ color:var(--faint); font-weight:400; }
+.knote.plain{ background:none !important; border:none !important; padding:0 !important; margin-top:4px; font-size:13px; color:var(--sub); }
+.gn-big{ font-size:18px; font-weight:700; margin-top:8px; line-height:1.35; }
+.gn-sub{ font-size:13.5px; color:var(--sub); }
+.gn-tx{ font-size:15px; line-height:1.7; margin-top:4px; }
+.gn-src{ font-size:12.5px; color:var(--faint); margin-top:2px; }
+.gn-dbtn{ font:inherit; font-size:13px; color:var(--link); background:transparent; border:none; padding:2px 4px; cursor:pointer; }
+.gn-dbox{ display:none; margin-top:6px; padding:8px 10px; border-radius:8px; background:var(--bg); } .gn-dbox.show{ display:block; }
+.gn-dh{ font-size:13px; font-weight:700; margin-top:8px; } .gn-dh:first-child{ margin-top:0; } .gn-from{ font-size:11.5px; font-weight:400; color:var(--faint); margin-left:6px; }
+.gn-cal{ display:inline-block; font-size:12px; font-weight:700; color:var(--do); border:1.2px solid var(--do); border-radius:7px; padding:2px 10px; margin-top:6px; text-decoration:none; }
+.gn-more summary{ font-size:15px; color:var(--sub); margin:2px 4px 10px; }
+.gn-sheet{ font-size:12.5px; color:var(--faint); text-align:right; margin:-4px 4px 0; }
+.gn-sheet a{ color:var(--faint); }
+.gn-foot .gn-done{ margin-left:auto; } .gn-foot .gn-more2{ flex:1; }
+.gn-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:6px; gap:8px; }
+.gn-more2 summary{ font-size:13px; font-weight:400; color:var(--faint); cursor:pointer; }
+.gn-done{ flex:none; font:inherit; font-size:12px; color:var(--sub); background:transparent; border:1px solid var(--line); border-radius:7px; padding:3px 12px; cursor:pointer; }
+.gn-modal{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
+.gn-modal > div{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; max-width:340px; width:100%; }
+.gn-modal p{ margin:0 0 14px; font-size:16px; line-height:1.6; }
+.gn-modal .row2{ display:flex; gap:8px; justify-content:flex-end; }
+.gn-modal button{ font:inherit; font-size:14px; border-radius:8px; padding:6px 14px; cursor:pointer; background:transparent; color:var(--ink); border:1px solid var(--line); }
+.gn-modal button.go{ border-color:var(--hot); color:var(--hot); font-weight:700; }
+/* 第6版：案件の工程（「工程を見る」で開く画面。デザイン見本 10/4 のとおり） */
+.kbtn{ font:inherit; font-size:12.5px; font-weight:700; color:var(--do); background:transparent; border:1.2px solid var(--do); border-radius:8px; padding:4px 12px; cursor:pointer; white-space:nowrap; }
+.kbtn .n{ color:var(--hot); margin-left:4px; } .kbtn.none{ color:var(--sub); border-color:var(--line); }
+.ks-wrap{ position:fixed; inset:0; background:var(--bg); overflow-y:auto; -webkit-overflow-scrolling:touch; z-index:40; }
+.ks-wrap > .page{ padding-top:max(14px, env(safe-area-inset-top,0px)); }
+.ks{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 14px 18px; --ok:var(--c-line); --ai:#9A6BD6; }
+.ks .sh-top{ display:flex; align-items:flex-start; gap:10px; }
+.ks .sh-top .nm{ flex:1; font-size:20px; font-weight:700; line-height:1.35; }
+.ks .sh-top .nm small{ display:block; font-size:13px; font-weight:400; color:var(--sub); }
+.ks .fix{ font:inherit; font-size:12px; color:var(--link); background:none; border:none; padding:0; cursor:pointer; text-decoration:underline; }
+.ks-wrap > .close{ position:fixed; top:max(10px, env(safe-area-inset-top,0px)); right:12px; z-index:41; width:44px; height:44px; border-radius:50%; font:inherit; font-size:26px; line-height:1; color:var(--ink); background:var(--bg); border:1.5px solid var(--line); box-shadow:0 2px 8px rgba(0,0,0,.15); cursor:pointer; }
+.kcap2 summary{ font-size:12.5px; color:var(--faint); cursor:pointer; margin-top:4px; } .dl .srcd, .srcd.inl{ display:inline-block; margin-left:8px; vertical-align:baseline; } .srcd[open]{ display:block; margin-left:0; } .srcd summary{ font-size:12px; color:var(--faint); cursor:pointer; list-style:none; } .srcd summary::-webkit-details-marker{ display:none; } .srcd summary::after{ content:' ▼'; font-size:10px; } details.prep > summary{ cursor:pointer; list-style:none; } details.prep > summary::-webkit-details-marker{ display:none; }
+.ks-wrap > .close2{ display:block; margin:8px auto 40px; font:inherit; font-size:15px; font-weight:700; padding:10px 40px; border-radius:10px; color:var(--ink); background:transparent; border:1.5px solid var(--line); cursor:pointer; }
+.ks .sh-top{ padding-right:52px; }
+.ks .big{ font-size:22px; font-weight:700; margin:10px 0 2px; }
+.ks .kline{ position:relative; margin:22px 4px 6px; height:6px; display:flex; gap:2px; }
+.ks .kline > i{ height:100%; border-radius:3px; }
+.ks .dot{ position:absolute; top:-3px; width:12px; height:12px; margin-left:-6px; border-radius:50%; background:var(--card); border:3px solid var(--sub); }
+.ks .dot.est{ border-width:2px; border-color:var(--faint); } .ks .dot.plan{ border-color:var(--do); }
+.ks .now{ position:absolute; top:-10px; height:26px; width:4px; margin-left:-2px; background:#E24B4A; border:1px solid var(--card); border-radius:2px; }
+.ks .now::after{ content:"今日"; position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:11px; font-weight:700; color:#E24B4A; white-space:nowrap; }
+.ks .lbls{ position:relative; height:18px; font-size:11.5px; font-weight:700; color:var(--sub); margin:8px 4px 0; }
+.ks .lbls span{ position:absolute; transform:translateX(-50%); white-space:nowrap; }
+.ks .lbls span.l{ transform:none; } .ks .lbls span.r{ transform:translateX(-100%); }
+.ks .ms{ margin-top:14px; border-top:1px solid var(--line); }
+.ks .ms-r{ display:flex; gap:10px; padding:7px 2px; border-bottom:1px solid var(--line); align-items:baseline; }
+.ks .ms-r .k{ flex:none; width:5.2em; font-size:14px; font-weight:700; } .ks .ms-r .v{ flex:1; min-width:0; }
+.ks .d{ font-size:15.5px; font-weight:700; } .ks .d.est{ color:var(--faint); font-weight:400; }
+.ks .kind{ display:inline-block; font-size:11.5px; font-weight:700; border-radius:4px; padding:0 5px; margin-right:6px; vertical-align:1px; }
+.ks .kind.est{ color:var(--faint); border:1px solid var(--line); } .ks .kind.plan{ color:var(--do); border:1px solid var(--do); }
+.ks .kind.fix{ color:#fff; background:var(--do); } .ks .kind.done{ color:#fff; background:var(--ok); } .ks .kind.skip{ color:var(--faint); border:1px dashed var(--line); }
+.ks .src{ font-size:11.5px; color:var(--faint); line-height:1.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ks .src.alt{ color:var(--wait); }
+.ks .grp{ margin-top:20px; }
+.ks .grp-h{ font-size:15px; font-weight:700; display:flex; align-items:center; gap:6px; padding:0 2px 6px; border-bottom:2px solid var(--line); }
+.ks .grp-h .c{ font-size:12px; font-weight:700; border-radius:99px; padding:0 8px; background:var(--bg); color:var(--sub); }
+.ks .grp.over .grp-h{ border-bottom-color:var(--hot); } .ks .grp.over .grp-h .c{ background:var(--hot); color:#fff; }
+.ks .grp.week .grp-h{ border-bottom-color:var(--wait); } .ks .grp.week .grp-h .c{ background:var(--wait); color:#fff; }
+.ks .it{ padding:9px 2px; border-bottom:1px solid var(--line); }
+.ks .it-h{ display:flex; gap:8px; align-items:flex-start; } .ks .it-t{ flex:1; min-width:0; }
+.ks .it-t .w{ font-size:16px; font-weight:700; line-height:1.4; }
+.ks .it-t .who{ font-size:12.5px; color:var(--sub); font-weight:400; margin-left:6px; }
+.ks .it-t .dl{ font-size:13.5px; margin-top:1px; }
+.ks .dtx.tap{ cursor:pointer; border-bottom:1px dotted var(--faint); }
+.ks .it-t .dl .setd{ font:inherit; font-size:11.5px; color:var(--link); background:none; border:none; padding:0 0 0 6px; cursor:pointer; }
+.ks .it-b{ flex:none; display:flex; gap:4px; }
+.ks .b{ font:inherit; font-size:12px; font-weight:700; border-radius:7px; padding:3px 9px; background:transparent; cursor:pointer; border:1.2px solid; }
+.ks .b.ok{ color:var(--ok); } .ks .b.no{ color:var(--faint); border-color:var(--line); } .ks .b:disabled{ opacity:.5; }
+.ks .it.isdone .w{ color:var(--faint); text-decoration:line-through; }
+.ks .ai{ margin-top:6px; font-size:13px; color:var(--ai); border-left:3px solid var(--ai); padding:2px 0 2px 8px; }
+.ks .ai button{ font:inherit; font-size:11.5px; font-weight:700; color:var(--ai); background:transparent; border:1px solid var(--ai); border-radius:6px; padding:1px 8px; margin-left:6px; cursor:pointer; }
+.ks .prep{ margin:7px 0 0 2px; padding:6px 10px; background:var(--bg); border-radius:8px; }
+.ks .prep-h{ font-size:12.5px; font-weight:700; color:var(--sub); }
+.ks .pi{ display:flex; gap:8px; align-items:baseline; font-size:14px; padding:2px 0; }
+.ks .pi input{ flex:none; width:16px; height:16px; margin:0; position:relative; top:2px; accent-color:var(--ok); }
+.ks .pi .pw{ flex:1; min-width:0; } .ks .pi .pr{ flex:none; font-size:11.5px; color:var(--faint); max-width:45%; text-align:right; }
+.ks .pi.on .pw{ color:var(--faint); text-decoration:line-through; }
+.ks .more{ font:inherit; font-size:13px; font-weight:700; color:var(--link); background:none; border:none; padding:8px 2px 0; cursor:pointer; }
+.ks details.all{ margin-top:22px; } .ks details.all > summary{ font-size:14.5px; font-weight:700; color:var(--link); cursor:pointer; padding:4px 2px; }
+.ks .st{ font-size:14px; font-weight:700; padding:12px 2px 4px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; } .ks .st span{ color:var(--sub); font-size:12.5px; font-weight:400; }
+.ks .foot{ font-size:11.5px; color:var(--faint); margin-top:16px; line-height:1.7; } .ks .foot.bad{ color:var(--hot); font-weight:700; }
+.ks .empty{ margin-top:12px; padding:12px; border-radius:10px; background:var(--bg); font-size:14.5px; color:var(--sub); } .ks .empty b{ color:var(--hot); }
+.ks .kcap{ font-size:10.5px; line-height:1.55; color:var(--faint); margin-top:4px; opacity:.85; }
+.knote{ margin-top:6px; font-size:13px; font-weight:700; color:#7a5a00; background:#fff2cc; border-radius:7px; padding:5px 9px; }
+.ks .cfneed{ font-size:11.5px; font-weight:700; color:var(--wait); margin-top:2px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .ks .cfok{ font-size:11.5px; color:var(--ok); margin-top:2px; }
+.ks .cfbtn{ font:inherit; font-size:11.5px; font-weight:700; color:var(--wait); background:transparent; border:1.2px solid var(--wait); border-radius:6px; padding:1px 8px; cursor:pointer; }
+.ks .err{ color:var(--hot); font-size:13px; font-weight:700; margin-top:6px; }
+.ks-form label{ display:flex; align-items:center; gap:10px; margin:8px 0; font-size:14px; } .ks-form label span{ flex:none; width:6.5em; font-weight:700; }
+.ks-form input,.ks-form select{ flex:1; min-width:0; font:inherit; font-size:15px; padding:5px 8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
+.ks-form .go{ border-color:var(--do) !important; color:var(--do) !important; }
+.ks-form .hint2{ font-size:12px; color:var(--faint); margin:-4px 0 8px 7.2em; }
+/* 10/5：題名の上の案件名（小さく、かろうじて読める濃さ） */
+.cname{ font-size:12.5px; line-height:1.3; color:var(--faint); font-weight:600; margin:0 0 3px 1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* 第39版：案件カードの中の件 */
+.tri{ justify-content:flex-end; } .tri > *{ flex:0 0 6.5em; }
+.head.tap{ cursor:pointer; } .head .chev{ flex:none; font-size:15px; color:var(--faint); transition:transform .2s; margin-top:2px; } .head .chev.on{ transform:rotate(180deg); }
+.kc-tg{ display:flex; align-items:center; gap:10px; width:100%; font:inherit; font-size:14px; font-weight:700; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:6px 10px; margin-top:10px; cursor:pointer; text-align:left; }
+.kc-tg .kc-n{ flex:1; min-width:0; } .kc-tg .kc-oc{ flex:none; font-size:12.5px; font-weight:400; color:var(--link); } .kc-hot{ flex:none; color:#fff; background:var(--hot); border-radius:5px; padding:0 6px; font-size:12.5px; }
+.kc-box{ margin-top:4px; } .kc-sec{ margin-top:10px; } .kc-sh{ font-size:15px; font-weight:700; padding:2px 2px 4px; border-bottom:2px solid var(--line); margin-bottom:6px; }
+.k-todo .kc-sh{ border-bottom-color:#8E94A4; } .k-wait .kc-sh{ border-bottom-color:var(--wait); } .k-worry .kc-sh{ border-bottom-color:var(--worry); }
+.kc-gh{ font-size:12px; color:var(--faint); font-weight:600; margin:6px 2px 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .kc-gh::before{ content:'LINE：'; }
+.gn .card{ margin-bottom:6px; padding:10px 12px 8px; } .gn .cname{ display:none; } .gn .card .bdg{ display:none; }
+.kc-nobar{ font-size:12.5px; color:var(--faint); margin-top:2px; }
+.lst-sub{ font-size:13px; color:var(--faint); font-weight:400; margin-left:8px; }
+/* 第43版：案件カードをすっきり（オレンジを減らす） */
+.todaysched .lbl{ font-size:16px; color:var(--ink); }
+.gn-nm.row{ display:flex; align-items:center; gap:8px; } .gn-nm.row b{ flex:1; min-width:0; } .gn-menu{ flex:none; font:inherit; font-size:20px; line-height:1; color:var(--sub); background:transparent; border:1px solid var(--line); border-radius:8px; padding:2px 10px 6px; cursor:pointer; }
+.cm-sub{ font-size:13px; color:var(--sub); margin:-8px 0 12px; }
+.kc-sh{ border-bottom-color:var(--line) !important; } button.kc-sh{ display:block; width:100%; text-align:left; font:inherit; font-size:15px; font-weight:700; color:var(--sub); background:transparent; border:none; border-bottom:2px solid var(--line); cursor:pointer; padding:2px 2px 4px; }
+.kc-sec.shut .kc-g{ display:none; } .kc-sec.shut .kc-sh{ margin-bottom:0; }
+.gn .card{ border-left:3px solid var(--line) !important; background:var(--c-todo); } .gn .card.wait{ background:var(--c-wait); } .gn .card.worry{ background:var(--c-worry); }
+.tb.give{ color:var(--sub); border-color:var(--faint); } .chip{ color:var(--ink); border-color:var(--line); } .hint{ color:var(--sub); } .ov-d.un{ color:var(--faint) !important; }
+/* 第42版：今の段階・目安の丸 */
+.gn-now.est,.ov-now.est{ background:var(--card); } .gn-stage{ display:block; margin:4px 0 0 auto; font:inherit; font-size:12.5px; color:#E0A030; background:transparent; border:none; padding:2px 0; cursor:pointer; text-decoration:underline; } .gn-stage.ok{ color:var(--faint); }
+.stg{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; } .stg button{ text-align:left; } .stg button.on{ border-color:var(--c-line) !important; color:var(--c-line) !important; font-weight:700; }
+/* 第41版：任せる相手のボタン・完了のあとの帯 */
+.gn-end{ display:block; margin:10px 0 0 auto; font:inherit; font-size:12px; color:var(--faint); background:transparent; border:none; padding:2px 0; cursor:pointer; text-decoration:underline; }
+.chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; } .chip{ font:inherit; font-size:14px; font-weight:700; padding:6px 12px; border-radius:99px; border:1.2px solid var(--wait); background:transparent; color:var(--wait); cursor:pointer; } .chip.ext{ border-style:dashed; color:var(--sub); border-color:var(--line); } .chip:disabled{ opacity:.5; }
+.toast{ position:fixed; left:12px; right:12px; bottom:calc(14px + env(safe-area-inset-bottom,0px)); max-width:520px; margin:0 auto; z-index:60; background:#2B3040; color:#EEF0F5; border-radius:12px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+.toast .tm{ font-size:14px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.toast .tb2{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; } .toast .tb2 button{ font:inherit; font-size:13px; font-weight:700; padding:5px 12px; border-radius:8px; border:1px solid #5A6072; background:transparent; color:#EEF0F5; cursor:pointer; } .toast .tb2 button:first-child{ border-color:#8FB5FF; color:#8FB5FF; }
+.toast .ask input{ background:#1A1D26; color:#EEF0F5; }
+/* 第40版：横断工程表（1行18px） */
+.gn,.card,h2{ scroll-margin-top:84px; }
+.ov{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:6px 10px 6px; margin-bottom:10px; }
+.ov-r{ display:flex; align-items:center; gap:8px; width:100%; height:20px; font:inherit; background:none; border:none; padding:0; color:var(--ink); cursor:pointer; text-align:left; }
+.ov-h{ height:16px; cursor:default; } .ov-o{ font-style:normal; font-weight:400; font-size:10px; color:var(--faint); margin-left:3px; } .ov-n{ flex:none; width:5.4em; font-size:12.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .ov-h .ov-n{ font-size:10px; font-weight:400; color:var(--faint); }
+.ov-ph{ flex:1; min-width:0; display:flex; gap:1px; font-size:9.5px; color:var(--faint); letter-spacing:-.04em; } .ov-ph span{ white-space:nowrap; overflow:hidden; }
+.ov-b{ flex:1; min-width:0; position:relative; display:flex; gap:1px; height:5px; } .ov-b i{ height:100%; border-radius:1px; opacity:.85; }
+.ov-now{ position:absolute; top:-3px; width:11px; height:11px; border-radius:50%; background:#E24B4A; border:2px solid #FFD43B; }
+.ov-d{ flex:none; width:4.4em; white-space:nowrap; font-size:12px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums; } .ov-h .ov-d{ font-size:10px; font-weight:400; color:var(--faint); } .ov-d.un{ color:#E0A030; font-weight:400; }
+/* 第18版：読まなかった通知（たたんで一覧） */
+.mnotes{ margin:4px 4px 0; font-size:12.5px; color:var(--faint); } .mnotes summary{ cursor:pointer; } .mnl{ margin-top:4px; } .mn{ padding:2px 0; border-top:1px solid var(--line); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mn a{ color:var(--sub); text-decoration:none; }
+/* 第16版：メールは1件1行（高さはLINEのカードの3分の1ほど）。出すのは題名・続きを見る・完了だけ */
+.card.mrow{ border-left:4px solid var(--c-mail); padding:7px 10px 7px 12px; margin-bottom:6px; }
+.mrow .mr{ display:flex; align-items:center; gap:5px; }
+.mrow .mt{ flex:1; min-width:0; font-size:13.5px; font-weight:700; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.mrow .mb{ flex:none; width:3.4em; font:inherit; font-size:11.5px; font-weight:700; border-radius:6px; padding:2px 0; border:1.2px solid; background:transparent; cursor:pointer; white-space:nowrap; text-align:center; }   /* 10/6 社長：続きと完了は同じ大きさで小さく */
+.mrow .mb.mm{ color:var(--link); } .mrow .mb.md{ color:var(--c-line); }
+.mrow .morebox .body{ font-size:13.5px; }
+.mrow .hint{ margin-top:2px; }
+.archive .mrow .mb.md{ display:none; }
+/* 第45.3版（10/10 社長「プロのアプリに」）：画面を短く・カードを1つの形に・上の帯を小さく */
+.kc-gh::before{ content:none; }
+.lst .card .bdg, .lst .card .cname{ display:none; }
+.lst .card, .gn .card{ border:1px solid var(--line) !important; border-left:3px solid var(--line) !important; border-radius:10px; padding:10px 12px 8px; margin-bottom:6px; }
+.lst .card{ background:var(--c-todo,var(--card)); } .lst .card.wait{ background:var(--c-wait,var(--card)); } .lst .card.worry{ background:var(--c-worry,var(--card)); }
+.lst .card[data-hot="1"], .gn .card[data-hot="1"]{ border-left-color:var(--hot) !important; }
+.lst .kc-g{ margin-bottom:4px; } .lst .kc-gh{ margin:10px 2px 4px; }
+.card .tri{ border-top:none; margin-top:6px; padding-top:0; }
+.card .foot2{ display:flex; align-items:center; gap:8px; margin-top:6px; } .card .foot2 .hs{ flex:1; min-width:0; } .card .foot2 .hint{ margin-top:0; line-height:1.45; } .card .foot2 .tri{ margin-top:0; flex:none; }
+.lst.shut{ display:none; } h2.tgl{ cursor:pointer; } .lst-tg{ font-size:13px; color:var(--link,#8FB5FF); font-weight:400; margin-left:auto; padding-left:10px; white-space:nowrap; }
+h2{ display:flex; flex-wrap:wrap; align-items:baseline; column-gap:6px; } h2 small{ margin-left:0; white-space:nowrap; } .lst-sub{ white-space:nowrap; margin-left:0; }
+.testnote{ font-size:11px; padding:1px 8px; } .bar-in{ padding:6px 16px; } .bar-t b{ font-size:17px; } .bar-t span{ font-size:12.5px; }
+.ev .t:empty{ display:none; }
+/* ── 第47版：案件のタブ（タブの案 第14版・色は「落ち着いた紺」） ── */
+:root[data-theme="dark"]{ --bg:#0f1420; --card:#161d2b; --ink:#eef1f6; --sub:#a3acbd; --faint:#6f7a8e; --line:#253045; --do:#86aef2; --link:#86aef2; --c-cal:#86aef2; --hot:#ff6b7a; --wait:#c9a14a;
+  --fold:#1b2539; --pop:#1d2638; --tabl:#2c3a55; --give:#7fc7d6; --barc:#2a3550; --c-todo:#161d2b; --c-worry:#161d2b; --c-wait:#161d2b; }
+body{ font-size:16px; line-height:1.45; padding-bottom:calc(64px + env(safe-area-inset-bottom,0px)); }
+.page{ padding:0 0 28px; }
+.view[hidden]{ display:none !important; }
+.bar{ background:var(--bg); border-bottom:0; }
+.hd2{ max-width:720px; margin:0 auto; height:52px; display:flex; align-items:center; gap:12px; padding:0 16px 0 18px; border-bottom:1px solid var(--line); }
+.hd2 .bar-t{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
+.hd2 .bar-t b{ display:inline; font-size:15px; margin-right:10px; }
+.hd2 .bar-t span{ font-size:12px; color:var(--sub); }
+.orgb{ flex:none; font:inherit; height:30px; padding:0 12px; border-radius:8px; background:#26314a; color:var(--ink); border:0; font-size:13px; cursor:pointer; }
+.n-today{ max-width:720px; margin:0 auto; display:flex; justify-content:space-between; gap:10px; padding:9px 18px; font-size:13px; color:var(--sub); border-bottom:1px solid var(--line); cursor:pointer; }
+.n-today .tx{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.n-today .rh{ flex:none; color:var(--hot); white-space:nowrap; }
+.relmsg{ padding-top:6px; }
+.n-top{ padding:0 12px; }
+.n-top .inqline,.n-top .warnline{ margin:10px 6px 0; }
+.n-alert{ margin:10px 6px 0; border:1.5px solid var(--hot); border-radius:9px; padding:4px 0; } .n-alert .al{ display:block; width:100%; text-align:left; font:inherit; font-size:15px; font-weight:700; color:inherit; background:transparent; border:0; padding:8px 12px; cursor:pointer; } .n-alert .al+.al{ border-top:1px solid var(--line); } .n-alert .al-l{ padding:0 12px 8px; }
+/* 上のタブ（案件）：1段で横に払う */
+.n-tabs{ display:flex; flex-wrap:nowrap; gap:6px; align-items:flex-end; padding:10px 16px 0; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
+.n-tabs::-webkit-scrollbar{ display:none; }
+.n-tabs button{ flex:0 0 78px; height:44px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; position:relative; border-radius:10px 10px 0 0; background:transparent; border:1px solid var(--tabl); border-bottom:0; color:var(--sub); font:inherit; padding:0; cursor:pointer; -webkit-user-select:none; user-select:none; }
+.n-tabs button b{ font-size:13px; font-weight:400; max-width:72px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.2; }
+.n-tabs button em{ font-style:normal; font-size:11px; line-height:1; color:var(--faint); }
+.n-tabs button.on{ background:var(--fold); border-color:var(--fold); color:var(--ink); }
+.n-tabs button.on b{ font-weight:700; } .n-tabs button.on em{ color:var(--sub); }
+.n-tabs button.hot:after{ content:""; position:absolute; top:6px; right:7px; width:7px; height:7px; border-radius:4px; background:var(--hot); }
+.n-fp{ background:var(--fold); min-height:60vh; }
+.n-ph{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:8px 12px; align-items:center; padding:12px 18px 10px; }
+.n-ph .nm{ font-size:17px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.n-ph .go{ font:inherit; font-size:13px; color:var(--link); white-space:nowrap; background:none; border:0; padding:4px 0; cursor:pointer; }
+.n-ph .pbar{ height:6px; border-radius:3px; background:var(--barc); position:relative; overflow:hidden; }
+.n-ph .pbar i{ position:absolute; left:0; top:0; bottom:0; background:var(--link); border-radius:3px; }
+.n-ph small{ font-size:12px; color:var(--sub); white-space:nowrap; }
+/* 下のタブ（対応・懸念） */
+.n-sb{ position:sticky; top:calc(var(--st,var(--hh,42px)) + var(--th,0px)); transition:top .2s ease; z-index:5; display:flex; background:var(--fold); border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:0 8px; }
+.n-sb button{ flex:1 1 0; font:inherit; background:none; border:0; border-bottom:2.5px solid transparent; padding:14px 12px 11px; font-size:15px; color:var(--sub); white-space:nowrap; cursor:pointer; }
+.n-sb button em{ font-style:normal; font-size:12px; margin-left:4px; color:var(--faint); }
+.n-sb button.on{ color:var(--ink); font-weight:700; border-bottom-color:var(--ink); } .n-sb button.on em{ color:var(--sub); }
+.n-list{ transition:opacity .16s ease; } .n-list.fade{ opacity:0; transition:opacity .1s ease; }
+.n-none{ padding:22px 18px; font-size:14px; color:var(--sub); }
+.n-plh{ display:flex; justify-content:space-between; align-items:baseline; padding:14px 18px 6px; } .n-plh b{ font-size:15px; } .n-plh span{ font-size:13px; color:var(--sub); }
+.n-pl{ border-bottom:1px solid var(--line); } .n-pl .row{ display:flex; gap:12px; align-items:flex-start; padding:12px 14px 12px 18px; }
+.n-pl .no{ flex:none; width:24px; height:24px; border-radius:50%; border:1.5px solid var(--sub); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.n-pl .bd{ flex:1; min-width:0; cursor:pointer; } .n-pl .t{ font-size:16px; font-weight:700; line-height:1.45; } .n-pl .why{ font-size:13.5px; line-height:1.6; color:var(--sub); margin-top:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.n-pl.open .why{ -webkit-line-clamp:unset; display:block; } .n-pl .ac{ flex:0 0 54px; display:flex; flex-direction:column; } .n-pl .ac button{ font:inherit; height:28px; border-radius:14px; font-size:12.5px; background:transparent; cursor:pointer; border:1.2px solid var(--link); color:var(--link); }
+.n-pl.big .t{ font-size:18px; } .n-pl.big .row{ padding-top:14px; padding-bottom:14px; }
+/* 10/17 第52.3版：まとめた件（工程表の未着手・いま動くことの2件以上の項目）。見出しに残りの数・いちばん古い日・期限、開くと小さなチェック項目 */
+.n-pl .cnt, .n-gp .cnt{ font-size:14px; font-weight:700; color:var(--hot); margin-top:3px; } .n-pl .bn{ font-size:12px; color:var(--faint); margin-top:2px; }
+.n-gp{ position:relative; border-top:1px solid var(--line); padding:10px 14px 10px 18px; } .n-gp:first-child{ border-top:0; }
+.n-gp:before{ content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:2px; background:var(--link); } .n-gp.hot:before{ background:var(--hot); }
+.n-gp > .row{ display:flex; gap:12px; align-items:center; } .n-gp > .row .bd{ flex:1; min-width:0; cursor:pointer; } .n-gp > .row .t{ font-size:16px; font-weight:700; line-height:1.45; } .n-gp > .row .ar{ flex:none; font-size:13px; color:var(--faint); cursor:pointer; }
+.n-gkw{ padding:2px 0 4px; } .n-plw .n-gkw{ padding-right:14px; } .n-gh{ font-size:13px; font-weight:700; color:var(--sub); padding:10px 0 2px; }
+.n-gk{ display:flex; gap:10px; align-items:center; padding:7px 0; border-top:1px solid var(--line); } .n-gh + .n-gk, .n-gkw > .n-gk:first-child{ border-top:0; }
+.n-gk .bd{ flex:1; min-width:0; } .n-gk .t{ font-size:15px; line-height:1.45; overflow-wrap:anywhere; } .n-gk .m{ font-size:12.5px; color:var(--sub); margin-top:1px; } .n-gk.hot .m{ color:var(--hot); font-weight:700; }
+.n-gk.on .t{ text-decoration:line-through; color:var(--faint); } .n-gk.on .m{ color:var(--faint); font-weight:400; }
+.n-gk .gkb{ flex:0 0 54px; font:inherit; height:28px; border-radius:14px; padding:0; font-size:12.5px; background:transparent; cursor:pointer; border:1.2px solid var(--link); color:var(--link); } .n-gk .gkb.on{ border-color:var(--line); color:var(--sub); }
+.m .bn, .n-gk .bn{ font-size:12px; color:var(--faint); }   /* 10/17 第52.3版：件が起きた日（期限の字と見分けるため、小さく薄く頭に） */ .n-dj .bn{ font-size:12px; color:var(--faint); margin-top:2px; }
+body.viewonly .n-gk .gkb{ opacity:.35; }
+.n-pl .ac{ gap:5px; } .n-pl .ac button.lt{ border-color:var(--line); color:var(--sub); }
+.n-plw{ padding:0 0 6px 36px; } .n-pl.gone{ opacity:0; transition:opacity .2s; }
+/* 10/17 会社の大事なこと（全員のいちばん上。いま動くことと同じ形に、左の赤い線） */
+.n-wl.n-sumi .tx{ white-space:normal; overflow:visible; color:var(--ink); font-weight:700; font-size:15px; line-height:1.5; } .n-sumiw{ border-bottom:1px solid var(--line); }   /* 10/17 済んだかもをまとめて完了 */
+.n-vob{ margin-left:10px; font:inherit; font-size:13px; font-weight:700; padding:3px 12px; border-radius:14px; border:0; background:#fff; color:var(--hot); cursor:pointer; }
+.n-vo{ background:var(--hot); color:#fff; font-size:14px; font-weight:700; text-align:center; padding:7px 12px; }   /* 10/17 見るだけ */
+body.viewonly .ac button, body.viewonly .n-cgo button, body.viewonly .dcok, body.viewonly #modeb, body.viewonly .bs button, body.viewonly .cfbtn, body.viewonly .it-b button, body.viewonly .fix, body.viewonly .n-cp .kbtn{ opacity:.35; }
+.n-djb{ border-bottom:1px solid var(--line); } .n-djb[hidden]{ display:none; } .n-dj .row{ border-left:3px solid var(--hot); padding-left:15px; } .n-dj .who{ font-size:13.5px; color:var(--sub); margin-top:3px; }
+.n-dj .ac button{ border-color:var(--line); color:var(--sub); } .n-djd{ padding:0 14px 10px 18px; font-size:15px; color:var(--sub); } .n-djd .k{ white-space:pre-wrap; }
+.n-wl{ display:flex; width:100%; align-items:center; justify-content:space-between; gap:10px; font:inherit; font-size:14px; text-align:left; color:var(--sub); background:var(--fold); border:0; border-bottom:1px solid var(--line); padding:13px 18px; cursor:pointer; }
+.n-wl .tx{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .n-wl .ar{ flex:none; font-size:13px; color:var(--faint); } .n-wlw{ border-bottom:1px solid var(--line); }
+.n-fold{ display:flex; align-items:center; justify-content:space-between; width:calc(100% - 36px); margin:10px 18px; padding:0 14px; min-height:44px; font:inherit; font-size:14.5px; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:10px; cursor:pointer; text-align:left; }
+.n-fold:after{ content:"›"; color:var(--sub); font-size:18px; }
+/* 件の行 */
+.n-cd{ position:relative; border-top:1px solid var(--line); padding:10px 14px 10px 18px; }
+.n-cd:first-child{ border-top:0; }
+.n-cd:before{ content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:2px; background:var(--line); }
+.n-cd.hot:before{ background:var(--hot); }
+.n-cd .row{ display:flex; gap:12px; align-items:center; }
+.n-cd .bd{ flex:1; min-width:0; cursor:pointer; }
+.n-cd .t{ font-size:16px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+.n-cd.open .t{ display:block; }
+.n-cd .m{ font-size:13px; color:var(--sub); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.n-cd .m .h{ color:var(--hot); font-weight:700; } .n-cd .m .o{ color:var(--ink); } .n-cd .m .ow{ color:var(--wait,#c9a14a); font-weight:700; font-size:13.5px; }   /* 10/16 確かめ役：しばらく動きのない理由を目立たせる */ .n-cd .m .me{ color:var(--link); }
+.n-cd .ac{ flex:0 0 54px; display:flex; flex-direction:column; gap:5px; }
+.n-cd .ac button{ font:inherit; height:28px; border-radius:14px; padding:0; font-size:12.5px; background:transparent; cursor:pointer; border:1.2px solid var(--link); color:var(--link); }
+.n-cd .ac button.gv{ border-color:var(--give); color:var(--give); }
+.n-cd .ac button.gv.on{ background:var(--give); color:var(--bg); font-weight:700; }
+.n-cd .ac button.ck{ border-color:var(--sub); color:var(--sub); } .n-cd .ac button.ck.on{ background:var(--ink); border-color:var(--ink); color:var(--bg); font-weight:700; }
+.n-cd.cd .m{ white-space:normal; overflow:visible; } .n-candw{ border-bottom:1px solid var(--line); } .n-cgo{ display:flex; flex-direction:column; align-items:flex-end; gap:5px; padding:8px 14px 10px 18px; } .n-cgo .k{ font-size:12.5px; color:var(--sub); text-align:right; }
+.n-cgo .dcok{ font:inherit; font-size:12.5px; font-weight:700; height:28px; padding:0 14px; border-radius:14px; border:0; background:var(--link); color:var(--bg); cursor:pointer; }   /* 10/17 確かめ役：ボタンは小さく右に */
+@media (max-width:600px){ .toast.stay{ right:76px; } }   /* 元に戻すの帯は、件の右の「任せる」「完了」に重ねない */
+.n-cd.gone{ opacity:0; transform:translateX(30px); transition:opacity .2s,transform .2s; }
+/* 第49.5版（方針を軸に気づく）：結論と「なぜなら：」・監督を渡す件・これを先に・前の件 */
+.n-cd .kz{ font-size:13.5px; line-height:1.5; color:var(--do); margin-top:3px; overflow-wrap:anywhere; }
+.n-cd .hw{ font-size:13.5px; line-height:1.55; color:var(--sub); margin-top:3px; overflow-wrap:anywhere; }
+.n-det .kzw{ font-size:13.5px; line-height:1.6; color:var(--sub); }
+.n-hd{ display:grid; gap:6px; } .n-hd .dl{ display:flex; justify-content:space-between; gap:10px; width:100%; font:inherit; font-size:14.5px; font-weight:700; text-align:left; color:var(--link); background:var(--fold); border:0; border-radius:8px; padding:10px 12px; cursor:pointer; }
+.n-hd .dl0{ font-size:14px; color:var(--sub); } .n-hd ol{ margin:2px 0; padding-left:22px; font-size:14px; line-height:1.8; }
+.n-hd .tx{ white-space:pre-wrap; font-size:13.5px; line-height:1.65; background:var(--fold); border-radius:8px; padding:10px 12px; overflow-wrap:anywhere; -webkit-user-select:text; user-select:text; }
+.n-hd .hb{ display:flex; gap:8px; } .n-hd .hb button, .n-first{ font:inherit; font-size:13px; min-height:32px; padding:0 14px; border-radius:16px; background:transparent; border:1.2px solid var(--link); color:var(--link); cursor:pointer; }
+.n-hd .jh{ font-size:13px; color:var(--sub); margin-top:6px; } .n-hd .n-cd{ padding-left:12px; }
+.n-first{ margin:6px 0 4px; }
+/* 第49.6版：発注の形と監督を決める */
+.n-dc{ display:grid; gap:8px; } .n-dc .k{ color:var(--sub); font-size:13px; line-height:1.6; } .n-dc .dr{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .n-dc .dl{ font-size:13px; color:var(--sub); width:100%; }
+.n-dc .dr button{ font:inherit; font-size:13.5px; min-height:32px; padding:0 12px; border-radius:16px; background:transparent; border:1.2px solid var(--line); color:var(--ink); cursor:pointer; } .n-dc .dr button.on{ background:var(--link); border-color:var(--link); color:#fff; font-weight:700; }
+.n-dc input{ font:inherit; font-size:15px; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ink); width:9em; } .n-dc .dcok{ justify-self:start; font:inherit; font-size:14px; font-weight:700; min-height:36px; padding:0 22px; border-radius:18px; border:0; background:var(--link); color:var(--bg); cursor:pointer; }   /* 10/16 確かめ役：暗い画面で白い字が薄く見えた */
+.n-det{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); display:grid; gap:6px; font-size:14px; }
+.n-det .k{ color:var(--sub); font-size:13px; }
+.n-det .body{ margin-top:0; }
+.n-det .meta{ margin-top:0; }
+.n-ops{ display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+.n-ops button{ font:inherit; min-height:34px; padding:0 14px; border:1px solid #3e4c6c; border-radius:17px; background:transparent; font-size:13px; color:var(--ink); cursor:pointer; }
+.n-ops button.on{ border-color:var(--link); color:var(--link); font-weight:700; }
+.n-gv{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); }
+.n-gv .k{ font-size:13px; color:var(--sub); margin-bottom:8px; }
+.n-gv .chips{ gap:8px; margin-top:0; }
+.n-gv .chip{ min-height:38px; padding:0 16px; border:1px solid #3e4c6c; border-radius:19px; color:var(--ink); font-size:15px; font-weight:400; }
+.n-gv .chip.ext{ color:var(--sub); border-style:dashed; }
+.n-cd .panel.show{ margin-top:10px; }
+/* 下のボタン5つ */
+.n-nav{ position:fixed; left:0; right:0; bottom:0; z-index:30; height:calc(64px + env(safe-area-inset-bottom,0px)); padding-bottom:env(safe-area-inset-bottom,0px); border-top:1px solid var(--line); background:var(--bg); }
+.n-nav > div{ max-width:480px; margin:0 auto; height:64px; display:grid; grid-template-columns:repeat(2,1fr); }
+.n-nav button{ font:inherit; font-size:12px; background:none; border:0; color:var(--sub); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; padding:0; }
+.n-nav button:before{ content:""; width:22px; height:3px; border-radius:2px; background:transparent; }
+.n-nav button.on{ color:var(--link); font-weight:700; } .n-nav button.on:before{ background:var(--link); }
+.toast{ bottom:calc(74px + env(safe-area-inset-bottom,0px)); background:#2a3550; }
+/* 下から出る窓（整理する・任せたもの・移す先） */
+.n-shade{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:70; }
+.n-sheet{ position:fixed; left:0; right:0; bottom:0; z-index:71; max-width:720px; margin:0 auto; max-height:82vh; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--pop); border-radius:18px 18px 0 0; padding:8px 0 calc(16px + env(safe-area-inset-bottom,0px)); }
+.n-sheet .grab{ width:44px; height:5px; border-radius:3px; background:var(--faint); margin:0 auto 10px; }
+.n-sheet .ti{ padding:0 18px 10px; font-size:13px; color:var(--sub); border-bottom:1px solid var(--line); }
+.n-sheet .ti b{ display:block; color:var(--ink); font-size:15px; font-weight:400; overflow-wrap:anywhere; }
+.n-act{ display:flex; width:100%; min-height:54px; padding:0 18px; align-items:center; justify-content:space-between; gap:10px; font:inherit; font-size:16px; color:var(--ink); background:none; border:0; border-bottom:1px solid var(--line); text-align:left; cursor:pointer; }
+.n-act small{ font-size:13px; color:var(--sub); }
+.n-act .ck{ color:var(--link); font-size:13px; flex:none; }
+.n-act.now{ color:var(--sub); }
+.n-sheet .n-cd{ background:transparent; }
+.n-sheet select.as{ margin:0; font-size:15px; padding:6px 8px; }
+/* 案件・横断工程・予定・完了（今の中身をそのまま） */
+.n-v{ padding:12px 12px 0; }
+.n-v > h2:first-child{ margin-top:6px; }
+.n-cbtns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.n-cbtns button{ font:inherit; font-size:13px; font-weight:700; color:var(--link); background:transparent; border:1.2px solid var(--link); border-radius:8px; padding:4px 12px; cursor:pointer; }
+.n-cbtns button.sub2{ color:var(--sub); border-color:var(--line); font-weight:400; }
+.gn.flash{ box-shadow:0 0 0 2px var(--link); }
+.n-done .memo{ margin-top:4px; }
+.n-bottom{ padding:6px 16px 0; }
+/* 10/10 社長の直し（2回目）：上の帯を細く1行・下のタブの字を小さく線なし・詳細は濃い色の角丸の箱・横断工程3行 */
+.testnote,.hd2{ display:none; }
+.bar{ background:#17223b; } .hd3{ max-width:720px; margin:0 auto; height:26px; display:flex; align-items:center; gap:8px; padding:0 14px; font-size:11px; line-height:1; color:var(--faint); border-bottom:1px solid var(--line); white-space:nowrap; }
+.hd3 .logo{ font-weight:700; color:var(--sub); }
+.hd3 .bar-t{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; text-align:right; }
+.hd3 .bar-t span{ font-size:11px !important; color:var(--faint); }
+.n-sb button{ font-size:13.5px; padding:10px 8px 9px; border-bottom:0; color:var(--faint); }
+.n-sb button.on{ color:var(--ink); border-bottom:0; } .n-sb button em{ font-size:11px; }
+.n-det{ margin-top:10px; padding:10px 12px; border:0; border-radius:10px; background:var(--bg); gap:6px; }
+.n-det .sum-g{ font-size:13.5px; } .n-det .body{ padding:0; background:none; }
+.n-det .meta,.n-det .meta a.src{ font-size:11.5px; color:var(--faint); }
+.n-ov3{ margin:8px 4px 0; padding:4px 10px; } .n-ov3 .ov-r{ height:17px; } .n-ov3 .ov-h{ height:15px; } .n-ov3.folded .ov-r:not(.ov-h){ display:none; } .n-ov3.folded .ov-ph{ visibility:hidden; }
+.ov-h{ position:relative; } .ov-more{ font:inherit; font-size:12.5px; font-weight:700; color:var(--ink); background:none; border:0; padding:0; cursor:pointer; white-space:nowrap; }
+/* 10/11 社長：横断工程の箱は背景と同じ色（二重の四角をやめる）・棒は半分の太さ */
+.ov{ background:transparent; border:0; padding-left:2px; padding-right:2px; }
+.ov-b{ height:2.5px; } .ov-now{ top:-4.5px; }
+.n-ov3 .ov-more{ display:block; margin:2px 0 4px; } .n-ov3.folded .ov-h{ display:none; } .n-ov3.folded .ov-more{ margin-bottom:0; }
+.ov-r[hidden]{ display:none; }
+.n-bottom .groups{ margin:6px 0 0; } .n-bottom .groups summary{ font-size:12.5px; font-weight:400; color:var(--sub); }
+.n-tools{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 6px; } .n-tools button{ font:inherit; font-size:12.5px; color:var(--sub); background:transparent; border:1px solid var(--line); border-radius:8px; padding:4px 10px; cursor:pointer; } .n-tools select.as{ margin:0; }
+/* 10/10 社長の直し：タブの右端の「至急 ›」・件の区切り・案件のカード・予定のすき間 */
+.n-tbw{ position:sticky; top:var(--st,var(--hh,42px)); z-index:6; background:var(--bg); transition:top .2s ease; }   /* 第48版（10/11 社長）：案件のタブは上まで来たら貼り付いてついてくる */
+.n-rh{ position:absolute; right:0; top:10px; height:44px; padding:0 14px 0 12px; font:inherit; font-size:12.5px; font-weight:700; color:var(--hot); border:0; background:var(--bg); box-shadow:-12px 0 10px var(--bg); cursor:pointer; z-index:3; }   /* 10/16 確かめ役：名前の札に重なって見えた（ぼかしの色が暗い色で決め打ちだった） */
+.n-tbw .n-tabs{ padding-right:84px; }
+.n-rh[hidden]{ display:none; }
+.n-cd{ padding:13px 14px 13px 18px; border-top-color:#2c3750; }
+.n-cd .m{ font-size:12.5px; color:#7f889b; margin-top:4px; }
+.n-cd .m .h{ color:#d9737e; font-weight:600; } .n-cd .m .o{ color:#a3acbd; } .n-cd .m .me{ color:#7f9fd6; }
+.n-cd.hot:before{ background:#d9737e; }
+.n-cc{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px 12px; margin-bottom:10px; }
+.n-cc .r1{ display:flex; align-items:center; gap:10px; }
+.n-cc .r1 b{ flex:1; min-width:0; font-size:16.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.n-cc .r1 .gn-menu{ font-size:17px; padding:0 9px 4px; }
+.n-cc .r2{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; margin-top:10px; }
+.n-cc .pbar{ height:6px; border-radius:3px; background:var(--barc); position:relative; overflow:hidden; } .n-cc .pbar i{ position:absolute; left:0; top:0; bottom:0; background:var(--link); border-radius:3px; }
+.n-cc .r2 small{ font-size:12px; color:var(--sub); white-space:nowrap; }
+.n-cc .r3{ font-size:13px; color:#7f889b; margin-top:6px; line-height:1.5; }
+.n-cc .r3 .w{ color:var(--wait); }
+.n-cc .n-cbtns{ margin-top:10px; }
+.n-cc .n-cbtns .sub2{ margin-left:auto; }
+.n-clist{ border-top:1px solid var(--line); }
+.n-fold.reply{ border-color:#3b5a8c; color:var(--ink); }
+/* 10/11 社長「ロゴが小さすぎ。ヘッダーは紺に。デザイナーとして」：紺の帯に、すっきりナビをロゴらしく（字間・太さ）。テスト中は小さな札 */
+.hd3{ height:42px; padding:0 14px 0 16px; border-bottom:0; gap:10px; }
+.hd3 .logo{ cursor:pointer; -webkit-tap-highlight-color:transparent; } .hd3 .logo:active{ opacity:.6; } .hd3 .logo{ font-size:17px; font-weight:800; letter-spacing:.06em; color:#e8eefc; }
+.hd3 .vno{ font-size:11px; font-weight:400; color:rgba(255,255,255,.62); white-space:nowrap; }   /* 10/15 社長の決定：テスト中の札をやめ、版の番号（今何を見ているか・最新か） */
+.hd3 .bar-t span{ color:#9fb0d2 !important; }
+/* 10/11 社長「横断工程を左に置いたら右手で押せない」：右に寄せ、押せる大きさに */
+.n-ov3{ margin-top:6px; } .n-ov3 .ov-more{ display:block; margin:0 0 4px auto; min-height:34px; padding:0 4px 0 16px; font-size:13.5px; text-align:right; }
+.n-ov3.folded .ov-more{ margin-bottom:0; }
+.n-gvd{ display:flex; align-items:center; gap:10px; padding:12px 14px 12px 18px; border-top:1px solid #2c3750; font-size:13.5px; color:var(--sub); }
+.n-gvd span{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.n-gvd button{ flex:none; font:inherit; font-size:12.5px; color:var(--link); background:none; border:1.2px solid var(--link); border-radius:14px; height:28px; padding:0 12px; cursor:pointer; } .n-gvd button:disabled{ opacity:.45; }
+.n-crow{ display:flex; align-items:center; gap:10px; width:100%; font:inherit; color:var(--ink); background:none; border:0; border-bottom:1px solid #2c3750; padding:12px 14px 12px 16px; text-align:left; cursor:pointer; }
+.n-crow .bd{ flex:1; min-width:0; } .n-crow .t{ font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.n-crow .m{ font-size:12.5px; color:#7f889b; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .n-crow .m.w{ color:#a08a5a; }
+.n-crow .n{ flex:none; font-size:12px; color:var(--sub); } .n-crow .go{ flex:none; color:var(--faint); font-size:18px; }
+.n-crow.flash{ background:var(--card); }
+/* 第48版：案件の窓の「今どこ」・完了の行 */
+.n-stg{ padding:12px 18px 14px; border-bottom:1px solid var(--line); }
+.n-stg .k{ font-size:13px; color:var(--sub); margin-bottom:8px; }
+.n-stg .bs{ display:flex; flex-wrap:wrap; gap:8px; }
+.n-stg .bs button{ font:inherit; min-height:38px; padding:0 14px; border:1px solid #3e4c6c; border-radius:19px; background:transparent; color:var(--ink); font-size:15px; cursor:pointer; }
+.n-stg .bs button.on{ background:var(--link); border-color:var(--link); color:var(--bg); font-weight:700; }
+.n-done .news.dn{ cursor:pointer; } .n-done .news.dn .undo{ margin-top:6px; }
+.n-cases.n-v,.view.n-cases > .n-v{ padding:0; } .n-cases .gn-sheet{ margin-top:8px; }
+.n-sched .day{ padding:14px 2px; } .n-sched .dayname{ margin-bottom:4px; } .n-sched .ev{ padding:3px 0; }
+@media (prefers-reduced-motion: reduce){ .n-list,.n-list.fade,.n-cd.gone{ transition:none; } }
+
+/* 第48版（企画4章）：案件の一覧は1行（名前・今どこ・次の節目と日）。押すと案件のページ（画面いっぱい・上の帯の下） */
+.n-crow{ gap:12px; } .n-crow .t{ flex:0 1 auto; min-width:0; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.n-crow .s{ flex:none; font-size:13px; color:var(--sub); white-space:nowrap; }
+.n-crow .x{ flex:1 1 auto; min-width:0; text-align:right; font-size:13px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.n-cp{ position:fixed; left:0; right:0; top:var(--hh,42px); bottom:0; z-index:35; background:var(--bg); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+.n-cp .in{ max-width:720px; margin:0 auto; padding:4px 16px calc(32px + env(safe-area-inset-bottom,0px)); }
+.cp-h{ display:flex; align-items:center; gap:12px; padding:10px 0 12px; border-bottom:1px solid var(--line); }
+.cp-h .nm{ flex:1; min-width:0; font-size:20px; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
+.cp-h .x{ flex:none; width:40px; height:40px; border-radius:50%; font:inherit; font-size:22px; line-height:1; color:var(--ink); background:transparent; border:1px solid #3e4c6c; cursor:pointer; padding:0; }
+.cp-s{ padding:12px 0 14px; border-bottom:1px solid var(--line); }
+.cp-s .sh{ display:flex; align-items:center; gap:10px; min-height:28px; margin-bottom:6px; font-size:13px; color:var(--sub); }
+.cp-s .sh .by{ color:var(--faint); } .cp-s .sh .cp-btn{ margin-left:auto; }
+.cp-s .bs{ display:flex; flex-wrap:wrap; gap:8px; }
+.cp-s .bs button{ font:inherit; min-height:38px; padding:0 14px; border:1px solid #3e4c6c; border-radius:19px; background:transparent; color:var(--ink); font-size:15px; cursor:pointer; }
+.cp-s .bs button.on{ background:var(--link); border-color:var(--link); color:var(--bg); font-weight:700; }
+.cp-r{ display:flex; gap:12px; padding:4px 0; font-size:15px; line-height:1.5; } .cp-r .k{ flex:none; width:5.2em; white-space:nowrap; font-size:13px; color:var(--sub); padding-top:2px; } .cp-r .v{ flex:1; min-width:0; overflow-wrap:anywhere; }
+.cp-r a{ color:var(--link); text-decoration:none; } .cp-r .tg{ margin-left:8px; font-size:13px; color:var(--faint); }
+.cp-none{ font-size:15px; color:var(--sub); }
+.cp-j{ display:flex; gap:10px; align-items:baseline; padding:4px 0; font-size:15px; line-height:1.5; } .cp-j .v{ flex:1; min-width:0; overflow-wrap:anywhere; } .cp-j .w{ flex:none; max-width:42%; text-align:right; font-size:13px; color:var(--sub); overflow-wrap:anywhere; } .cp-j.dn .v{ color:var(--sub); } .cp-j .tg{ margin-left:8px; font-size:13px; color:var(--faint); } .cp-j .nb{ white-space:nowrap; }
+.n-phob{ padding:0 18px 10px; margin-top:-4px; font-size:13.5px; color:var(--ink); } .n-phob.un{ color:var(--sub); }
+.cp-ob{ padding:10px 0; font-size:15px; font-weight:700; border-bottom:1px solid var(--line); } .cp-ob.un{ color:var(--sub); font-weight:400; }
+.cp-f{ display:flex; justify-content:flex-end; gap:8px; padding:14px 0; }
+.cp-btn{ display:inline-flex; align-items:center; height:30px; padding:0 14px; font:inherit; font-size:13px; color:var(--link); background:transparent; border:1.2px solid var(--link); border-radius:15px; text-decoration:none; cursor:pointer; white-space:nowrap; }
+</style>
+</head>
+<body><div class="bar"><div class="hd3"><span class="logo" id="nm">すっきりナビ</span><span class="vno" id="vno"></span><span class="bar-t"><span id="upd"></span><span id="appst" style="font-size:12.5px;font-weight:400"></span></span></div><div class="relmsg" id="relmsg" hidden></div></div>
+<div class="page" id="page"></div>
+
+
+<script id="DATA" type="application/json">
+__APP_DATA__
+</script>
+<script>var SHOW_AI=false, SHOW_MOVE=false, SHOW_FIRST=false;   /* 10/16 社長の決定：別の案件へ移す・これを先に は出さない（中身は残す） */</script>
+<script>(function(v){ for(var k in v) window[k]=v[k]; })(parent.__app.vars());</script>
+<script>
+(function(){
+const D=JSON.parse(document.getElementById('DATA').textContent);
+const P=document.getElementById('page');
+if(D.none){ const m=document.createElement('div'); m.className='box'; m.style.marginTop='16px'; m.textContent=(D.viewer||'このアカウント')+' は、まだすっきりナビの利用者に入っていません。社長に、表への追加をお願いしてください。'; P.append(m); return; }
+const h=(tag,cls,txt)=>{const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e;};
+const hash=(s)=>{let x=2166136261>>>0; for(let i=0;i<s.length;i++){x^=s.charCodeAt(i); x=Math.imul(x,16777619)>>>0;} return 'k'+x.toString(16);};
+const BADGE={line:'LINE',mail:'メール',cal:'予定',drive:'Drive'};
+const link=(s)=>{ if(s.url && !/docs\.google\.com\/spreadsheets/.test(s.url)){const a=h('a','src',s.label+' ↗'); a.href=s.url; a.target='_blank'; return a;} return h('span','src',s.label); };
+// 第30版（10/7 社長「続きを見るが浅い」）：依頼文 第3.8版の要約（いま・なぜ・決まっていること・まだのこと・次にすること）は、見出しを太字にして1行ずつ
+const SUMK=/^(いま|なぜ|決まっていること|まだのこと|次にすること)[：:]\s*/;
+// 第48版（10/11 社長「いま・決まり…何が言いたいのか直感的に分からない」）：見出しを出さず、文だけを並べる。
+//  新しい形（見出しなしの2〜3文）はそのまま。古い形（いま：・決まっていること：…）は、書き直しが届くまで見出しの字を消して文だけ（次にすることは題名と似るので出さない）
+function sumView(t){ const lines=String(t).split('\n').map(x=>x.trim()).filter(Boolean); if(!lines.some(x=>SUMK.test(x))) return h('div','body',t);
+  const out=[]; lines.forEach(x=>{ const m=x.match(SUMK); if(m&&m[1]==='次にすること') return; let v=m?x.replace(SUMK,''):x; v=v.trim(); if(!v) return; if(!/[。！？）」]$/.test(v)) v+='。'; out.push(v); });
+  return h('div','body',out.join('')); }
+// 第48版：古い形の hint（「一言・名前・M/D」）は「M/D 名前さん「一言」」に並べ替える（書き直しが届くまで）
+const doneText=x=>String(x||'');   // 第51.1版（二重 #17）：形はサーバー（関係.js doneShow_）で作る
+const hintText=x=>String(x||'');   // 第51.1版：形はサーバー（関係.js hintShow_）で作る
+function more(body,srcs,top){ const f=document.createDocumentFragment(); const b=h('button','morebtn','詳細 ▼'); b.type='button';   // 第36版（10/8 社長）：「続きを見る」は「詳細」に
+  const box=h('div','morebox'); (top||[]).filter(Boolean).forEach(t=>box.append(h('div','mtop',t))); if(body) box.append(sumView(body)); const m=h('div','meta'); (srcs||[]).forEach(s=>m.append(link(s))); if(m.childNodes.length) box.append(m);
+  b.addEventListener('click',()=>{ const o=box.classList.toggle('show'); b.textContent=o?'閉じる ▲':'詳細 ▼'; }); f.append(b,box); return f; }
+// 第27版（10/7 社長）：同じ件がほかの人にも出ているときは、完了を押したあとに「自分の分だけ」か「みんなの分も」を選ぶ（迷ったら自分の分だけ＝何も消えない）
+function askAll(box,names,go){ if(!box||box.querySelector('.allask')) return; const a=h('div','allask'); a.append(h('div','plabel','同じ件が '+names.join('・')+' にも出ています'));
+  const r=h('div','allbtns'); const b1=h('button',null,'自分の分だけ完了'); b1.type='button'; const b2=h('button',null,names.join('・')+'の分も完了'); b2.type='button';
+  b1.onclick=()=>{ a.remove(); go(false); }; b2.onclick=()=>{ a.remove(); go(true); }; r.append(b1,b2); a.append(r); box.append(a); }
+const empty=()=>h('div','box empty','なし');
+// 第25版（10/7 社長「だらっと長い」）：案件の全体像を【見出し】ごとの箇条書きに。関わる人をいちばん上に「役割：名前」で
+function memoView(t){ const box=h('div','gm'); const secs=[]; String(t||'').split(/(?=【)/).forEach(s=>{ const m=s.match(/^【([^】]+)】([\s\S]*)$/); if(m) secs.push([m[1].trim(),m[2].trim()]); else if(s.trim()) secs.push(['',s.trim()]); });
+  secs.sort((a,b)=>(b[0]==='関わる人')-(a[0]==='関わる人'));
+  const items=v=>v.split(/。|\n/).map(x=>x.replace(/^[・\s]+/,'').trim()).filter(Boolean);
+  secs.forEach(([k,v])=>{ if(k) box.append(h('div','gm-h',k)); const ul=h('ul',k==='関わる人'?'gm-ul gm-ppl':'gm-ul');
+    items(v).forEach(x=>{ const li=h('li'); const m=k==='関わる人'?x.match(/^([^：:]{1,12})[：:]\s*(.*)$/):null; if(m){ li.append(h('b',null,m[1]),document.createTextNode('　'+m[2])); } else li.textContent=x; ul.append(li); }); box.append(ul); });
+  return box; }
+const noEmoji=(x)=>String(x||'').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu,'').replace(/^[⌘\s]+/,'').trim();
+// ── 第6版：案件の工程（「工程を見る」で開く。済・不要・予定日は台帳に残る） ──
+const KCOL=['oklch(0.74 0.11 205)','oklch(0.79 0.14 125)','oklch(0.82 0.15 85)','oklch(0.76 0.15 45)'];
+const KTYPES=['マンション','戸建'];   // 第11版：構造。工期の長さは掛け率（%）で
+const kindCls=(k)=>k==='目安'?'est':k==='予定'?'plan':k==='確定'?'fix':k==='済'?'done':'skip';
+function kbtnFor(g){ const s=g.sched||{}; const b=h('button','kbtn'); b.type='button';
+  if(s.error){ b.textContent='工程を見る'; b.classList.add('none'); }
+  else if(s.empty){ b.textContent='日程が未入力'; b.classList.add('none'); }
+  else { b.append(document.createTextNode('工程を見る')); if(s.n&&s.n.over) b.append(h('span','n','過ぎ '+s.n.over)); }
+  b.addEventListener('click',()=>openSched(g)); return b; }
+function openSched(g){
+  const s=g.sched||{}; const wrap=h('div','ks-wrap'); wrap.dataset.key=g.key; const pg=h('div','page'); const k=h('div','ks'); pg.append(k); wrap.append(pg); document.body.append(wrap); document.body.style.overflow='hidden';
+  const close=()=>{ wrap.remove(); document.body.style.overflow=CP?'hidden':''; document.removeEventListener('keydown',esc); }; wrap.__close=close;   /* 第48版：案件のページの上で開いたときは、閉じても下を動かさない */
+  const top=h('div','sh-top'); const nm=h('div','nm',g.name); const sm=h('small',null,(s.typeSet?s.type:'種類は未設定')+'・工事 約'+(s.build||90)+'日　'); const fx=h('button','fix','日程・種類を直す'); fx.type='button'; fx.onclick=()=>caseForm(g); sm.append(fx); if(!s.loading) nm.append(sm);   // 第29版（10/7 社長「文字が多すぎて読む気がしない」）：上は短く
+  // 第28版（10/7 社長「閉じるボタンが分かりにくい」）：右上にいつも見える大きな × と、いちばん下に「閉じる」。Esc でも閉じる
+  const cb=h('button','close','×'); cb.type='button'; cb.setAttribute('aria-label','閉じる'); cb.title='閉じる'; cb.onclick=close; wrap.append(cb); top.append(nm); k.append(top);
+  const cb2=h('button','close2','閉じる'); cb2.type='button'; cb2.onclick=close; wrap.append(cb2);
+  function esc(e){ if(e.key==='Escape') close(); } document.addEventListener('keydown',esc);
+  if(s.loading){ k.append(h('div','kcap kload','読んでいます…')); return wrap; }   // 第48版：押したらすぐ窓を開き、届いたら中身を入れる
+  if(s.error){ k.append(h('div','err','工程を出せませんでした。少したってから「更新」を押してください')); return; }
+  if(s.empty){ const e=h('div','empty'); e.append(h('b',null,'日程が入っていないため、工程を出せません。')); e.append(h('div',null,'プレゼン日か引渡日のどちらか1つが分かれば、残りは標準工期から目安を出します。')); const b=h('button','kbtn','日程を入れる'); b.type='button'; b.style.marginTop='8px'; b.onclick=()=>caseForm(g); e.append(b); k.append(e); return; }
+  k.append(h('div','big',g.big||''));
+  /* 第29版：出し方は短い1行。くわしい説明は押したときだけ */
+  { const d=h('details','kcap2'); d.append(h('summary',null,s.periodMode==='std'?'会社の標準日数から出した目安です':'工程表の工期に合わせています')); d.append(h('div','kcap',(s.periodLabel?s.periodLabel+'。':'')+(s.periodMode==='std'?'工程表ができたら、その工期に差し替わります。':'')+'引渡・施主検査・墨出しなどの日は、LINEで決まった日や入れた日が優先されます。')); k.append(d); } (s.notes||[]).forEach(t=>k.append(h('div','knote',t)));
+  if(s.line){ const L=s.line, ln=h('div','kline'), lb=h('div','lbls'); const seg=[0].concat(L.seg); for(let i=0;i<4;i++){ const w=Math.max(0.5,seg[i+1]-seg[i]); const x=h('i'); x.style.flex=w; x.style.background=KCOL[i]; ln.append(x); }
+    L.dots.forEach(d=>{ const x=h('div','dot '+d.kind); x.style.left=d.p+'%'; ln.append(x); });
+    const nw=h('div','now'); nw.style.left=Math.min(100,Math.max(0,L.now))+'%'; ln.append(nw);
+    const ls=[['ワーク',0,'l']].concat(L.dots.filter(d=>d.k!=='本着工').map(d=>[d.k==='解体着工'?'着工':d.k,d.p,d.k==='引渡'?'r':''])); let last=-99; ls.forEach(([t,p,c],i)=>{ if(i&&i<ls.length-1&&(p-last<18||100-p<13)) return; last=p; const x=h('span',c,t); x.style.left=p+'%'; lb.append(x); });   // 近すぎる名前は重なるので出さない
+    k.append(ln,lb); }
+  const ms=h('div','ms'); const t0=new Date(); t0.setHours(0,0,0,0); (s.ms||[]).filter(m=>!(m.t&&m.t<t0.getTime())).slice(0,3).forEach(m=>{   /* 第29版：これからの節目は3つまで */ /* 10/4 社長：過ぎた節目は出さない */ const r=h('div','ms-r'); r.append(h('div','k',m.k)); const v=h('div','v'); if(m.kind) v.append(h('span','kind '+kindCls(m.kind),m.kind)); v.append(h('span','d'+(m.kind==='目安'||!m.kind?' est':''),m.d)); if(m.src||(m.alts&&m.alts.length)){ const sd=h('details','srcd'); sd.append(h('summary',null,'出どころ')); if(m.src) sd.append(h('div','src',m.src)); if(m.alts&&m.alts.length) sd.append(h('div','src alt','ほかの候補：'+m.alts.join('・'))); v.append(sd); sd.classList.add('inl'); }
+    if(m.cf){ const cl=h('div',m.cf.done?'cfok':'cfneed',m.cf.text); if(!m.cf.done){ const bt=h('button','cfbtn','確認済みにする'); bt.type='button'; bt.onclick=async()=>{ bt.disabled=true; try{ const res=await gs('saveMsConfirm',g.key,m.ms,m.t); cl.className='cfok'; cl.textContent=res.text; }catch(e){ bt.disabled=false; cl.append(h('div','err','保存できませんでした（'+niceErr(e)+'）')); } }; cl.append(bt); } v.append(cl); }   /* 10/5 確定した日も、確認済みが押されるまで要確認 */
+    r.append(v); ms.append(r); }); k.append(ms);
+  const grp=(cls,title,list)=>{ const gp=h('div','grp '+cls); const hd=h('div','grp-h',title); hd.append(h('span','c',String(list.length))); gp.append(hd);
+    if(!list.length) return;   // 第29版：空の欄は出さない
+    const box=h('div'); gp.append(box); list.forEach((it,i)=>{ const r=item(g,it); if(i>=3) r.hidden=true; box.append(r); });
+    if(list.length>3){ const mb=h('button','more','残り'+(list.length-3)+'件を見る'); mb.type='button'; mb.onclick=()=>{ box.querySelectorAll('.it').forEach(x=>x.hidden=false); mb.remove(); }; gp.append(mb); }
+    k.append(gp); };
+  grp('over','過ぎている',s.over||[]); grp('week','今週（'+s.weekLabel+'）',s.week||[]); grp('next','来週（'+s.nextLabel+'）',s.next||[]);
+  if(!(s.over||[]).length&&!(s.week||[]).length&&!(s.next||[]).length) k.append(h('div','kcap','今週と来週にやることはありません'));
+  // 全部の工程：押したときに読む
+  const all=h('details','all'); all.append(h('summary',null,'全部の工程を見る（'+(s.fit||0)+'）')); const ab=h('div',null); all.append(ab); k.append(all);
+  all.addEventListener('toggle',async()=>{ if(!all.open||ab.dataset.done) return; ab.textContent='読んでいます…';
+    try{ const f=await gs('getSchedule',g.key); ab.textContent=''; ab.dataset.done='1';
+      (f.all||[]).forEach(st=>{ const cnt={}; st.items.forEach(it=>{ cnt[it.st]=(cnt[it.st]||0)+1; }); const hd=h('div','st',st.stage); hd.append(h('span',null,st.items.length+'件　'+Object.keys(cnt).map(x=>x+' '+cnt[x]).join('・'))); ab.append(hd); st.items.forEach(it=>ab.append(item(g,it,true))); }); }
+    catch(e){ ab.textContent=''; ab.append(h('div','err','読めませんでした（'+niceErr(e)+'）。もう一度開いてください')); } });
+  const n=s.n||{}; const ft=h('div','foot'+(s.ok?'':' bad'),'数の突き合わせ：当てはまる '+s.fit+' ＝ 済とみなす '+(n.assumed||0)+' ＋ 済 '+(n.done||0)+' ＋ 不要 '+(n.skip||0)+' ＋ 過ぎ '+(n.over||0)+' ＋ 今週 '+(n.week||0)+' ＋ 来週 '+(n.next||0)+' ＋ その先 '+(n.later||0)+' ＋ 日にちなし '+(n.nodate||0)+(s.ok?'（合っています）':'（合っていません。社長に知らせてください）'));
+  if(!s.ok) k.append(ft);   // 第29版：数が合っているときは出さない（合わないときだけ赤で出す）
+}
+// 1行（やること）。full：全部の工程の一覧（済とみなす・済・不要も出し、「未に戻す」を付ける）
+function item(g,it,full){
+  const r=h('div','it'+(it.st&&it.st!=='未'?' isdone':'')); const hd=h('div','it-h'); const t=h('div','it-t');
+  const w=h('div','w',it.w); w.append(h('span','who',it.who+(it.note?'・'+it.note:''))); t.append(w);
+  const dl=h('div','dl'); const kd=it.st==='不要'?'不要':it.st==='済とみなす'?'済とみなす':it.kind; dl.append(h('span','kind '+kindCls(kd==='済とみなす'?'skip':kd),kd)); const dt=h('span','dtx',it.d+(it.days&&it.st==='未'?'・'+it.days:'')); dl.append(dt);
+  if(it.st==='未'){ dt.classList.add('tap'); dt.title='押すと予定日を入れられます'; dt.onclick=()=>stepDate(g,it,r); }
+  t.append(dl); if(it.gap) t.append(h('div','src alt',it.gap)); if(it.src||(it.alts&&it.alts.length)){ const sd=h('details','srcd'); sd.append(h('summary',null,'出どころ')); if(it.src) sd.append(h('div','src',it.src)); if(it.alts&&it.alts.length) sd.append(h('div','src alt','ほかの候補：'+it.alts.join('・'))); dl.append(sd); }   // 第29版：出どころは押したときだけ
+  hd.append(t); const bx=h('div','it-b');
+  const set=async(state,btns)=>{ btns.forEach(b=>b.disabled=true); const er=r.querySelector('.err'); if(er) er.remove();
+    try{ const res=await gs('saveStep',g.key,it.id,state); it.st=state; r.classList.toggle('isdone',state!=='未'); dl.firstChild.className='kind '+kindCls(state==='未'?it.kind:state); dl.firstChild.textContent=state==='未'?it.kind:state; const sr=t.querySelector('.src'); if(sr&&state!=='未') sr.textContent=state+'：'+res.by+' '+res.at; if(state!=='未'){ const ss=t.querySelector('.srcd'); if(ss) ss.open=true; } const ai=r.querySelector('.ai'); if(ai) ai.remove(); bump(g,it,state); }
+    catch(e){ r.append(h('div','err','保存できませんでした（'+niceErr(e)+'）。もう一度押してください')); }
+    btns.forEach(b=>b.disabled=false); };
+  if(!full||it.st==='未'){ const ok=h('button','b ok','済'), no=h('button','b no','不要'); ok.type=no.type='button'; ok.onclick=()=>set('済',[ok,no]); no.onclick=()=>set('不要',[ok,no]); bx.append(ok,no); }
+  else { const back=h('button','b no','未に戻す'); back.type='button'; back.onclick=async()=>{ await set('未',[back]); if(it.st==='未') back.remove(); }; bx.append(back); }
+  hd.append(bx); r.append(hd);
+  if(it.ai&&it.st==='未'){ const a=h('div','ai',it.ai); const b=h('button',null,'済にする'); b.type='button'; b.onclick=()=>bx.querySelector('.b.ok').click(); a.append(b); r.append(a); }
+  if(it.prep&&it.prep.length){ const p=h('details','prep'); const ph=h('summary','prep-h'); p.append(ph); const upd=()=>{ ph.textContent='用意するもの　'+p.querySelectorAll('input:checked').length+' / '+it.prep.length+'　▼'; };   // 第29版：用意するものは押したときだけ開く
+    it.prep.forEach(x=>{ const l=h('label','pi'+(x.on?' on':'')); const c=h('input'); c.type='checkbox'; c.checked=!!x.on; l.append(c,h('span','pw',x.w)); const pr=h('span','pr',x.by||x.who); l.append(pr);
+      c.addEventListener('change',async()=>{ c.disabled=true; try{ const res=await gs('saveStep',g.key,x.id,c.checked?'済':'未'); l.classList.toggle('on',c.checked); pr.textContent=c.checked?'済 '+res.at+' '+res.by:x.who; upd(); }catch(e){ c.checked=!c.checked; pr.textContent='保存できませんでした'; } c.disabled=false; });
+      p.append(l); }); upd(); r.append(p); }
+  return r; }
+// 画面の数（カードの「過ぎ」）を合わせる
+function bump(g,it,state){ const s=g.sched; if(!s||!s.n) return; const inOver=(s.over||[]).some(x=>x.id===it.id); if(!inOver) return; s.n.over+=state==='未'?1:-1; const kb=document.querySelector('.gn[data-key="'+CSS.escape(g.key)+'"] .kbtn .n'); if(kb) kb.textContent='過ぎ '+Math.max(0,s.n.over); }
+// 1行の予定日
+function stepDate(g,it,r){ const m=h('div','gn-modal'); const b=h('div','ks-form'); b.append(h('p',null,'「'+it.w+'」の予定日')); const inp=h('input'); inp.type='date'; const l=h('label'); l.append(h('span',null,'予定日'),inp); b.append(l);
+  const er=h('p','gn-err'); er.hidden=true; const row=h('div','row2'); const no=h('button',null,'やめる'), go=h('button','go','入れる'); no.type=go.type='button'; row.append(no,go); b.append(row,er); m.append(b); document.body.append(m);
+  no.onclick=()=>m.remove(); go.onclick=async()=>{ if(!inp.value){ er.hidden=false; er.textContent='日付を選んでください'; return; } go.disabled=true; try{ await gs('saveStepDate',g.key,it.id,inp.value); m.remove(); const dl=r.querySelector('.dl'); dl.firstChild.className='kind fix'; dl.firstChild.textContent='予定'; dl.querySelector('.dtx').textContent=inp.value.slice(5).replace('-','/').replace(/^0/,'').replace('/0','/')+'（次に開いたときに並べ直します）'; }catch(e){ go.disabled=false; er.hidden=false; er.textContent='保存できませんでした（'+niceErr(e)+'）'; } }; }
+// 案件の日程・種類
+function caseForm(g){ const s=g.sched||{}; const m=h('div','gn-modal'); const b=h('div','ks-form'); b.style.maxWidth='440px'; b.style.maxHeight='88vh'; b.style.overflowY='auto'; b.append(h('p',null,g.name+'：日程・工期'));
+  // 構造（マンション／戸建）
+  const sel=h('select'); const o0=h('option',null,'（未設定）'); o0.value=''; sel.append(o0); KTYPES.forEach(t=>{ const o=h('option',null,t); o.value=t; if(s.typeSet&&s.type===t) o.selected=true; sel.append(o); }); const l0=h('label'); l0.append(h('span',null,'構造'),sel); b.append(l0);
+  // 工期の段階（7段階から選ぶ。%は裏で入る。合わなければ%を直接直す）
+  const lvs=s.levels||[]; const ls=h('select'); const lo0=h('option',null,'（選ぶ）'); lo0.value=''; ls.append(lo0); lvs.forEach(([n,r])=>{ const o=h('option',null,n+'（'+r+'%）'); o.value=String(r); if(s.rateSet&&s.rate===r) o.selected=true; ls.append(o); }); const ll=h('label'); ll.append(h('span',null,'工期の段階'),ls); b.append(ll);
+  const rt=h('input'); rt.type='number'; rt.min='20'; rt.max='400'; rt.step='5'; rt.placeholder='100'; if(s.rateSet) rt.value=s.rate; const lr=h('label'); lr.append(h('span',null,'掛け率（%）'),rt); b.append(lr);
+  const rh=h('div','hint2'); const upd=()=>{ const r=Number(rt.value)||100; rh.textContent='③マンションのフルリノベ（工事90日）が100%。今の値だと工事 約'+Math.round(90*r/100)+'日。あくまで目安で、工程表ができたら日付で調整されます。'; }; rt.addEventListener('input',()=>{ ls.value=lvs.some(x=>String(x[1])===rt.value)?rt.value:''; upd(); }); ls.addEventListener('change',()=>{ if(ls.value){ rt.value=ls.value; upd(); } }); upd(); b.append(rh);
+  // 節目の日：日がはっきりしていれば日付、まだなら時期（2月中旬など）
+  const ins={}, pre={}, per={}, ppre={}; const MSN={'プレゼン':'プレゼン','解体':'解体着工','本着工':'本着工','引渡':'引渡'};
+  const ymd=(t)=>{ const d=new Date(t+9*3600000); return d.toISOString().slice(0,10); };
+  b.append(h('div','hint2','日がはっきりしていれば日付、まだなら「時期」に月と上旬・中旬・下旬を入れてください。日付が入っていれば、日付が優先です。'));
+  [['プレゼン','プレゼン'],['解体','解体着工'],['本着工','本着工'],['引渡','引渡']].forEach(([k,t])=>{
+    const i=h('input'); i.type='date'; const mm=(s.ms||[]).find(x=>x.ms===k||x.k===MSN[k]); if(mm&&mm.kind==='確定'&&mm.t){ i.value=ymd(mm.t); pre[k]=1; }
+    const l=h('label'); l.append(h('span',null,t+'日'),i); b.append(l); ins[k]=i;
+    const ym=h('input'); ym.type='month'; const pt=h('select'); ['','上旬','中旬','下旬'].forEach(x=>{ const o=h('option',null,x||'（月だけ）'); o.value=x; pt.append(o); });
+    if(mm&&mm.hp){ ym.value=mm.hp.ym; pt.value=mm.hp.part||''; ppre[k]=1; }
+    const lp=h('label'); lp.append(h('span',null,'　時期'),ym,pt); ym.style.flex='1.4'; pt.style.flex='1'; b.append(lp); per[k]={ym,pt};
+  });
+  const er=h('p','gn-err'); er.hidden=true; const row=h('div','row2'); const no=h('button',null,'やめる'), go=h('button','go','保存する'); no.type=go.type='button'; row.append(no,go); b.append(row,er); m.append(b); document.body.append(m);
+  no.onclick=()=>m.remove();
+  // 第48版（企画1章）：押したらすぐ閉じて、案件の行・横断工程・工程の窓をその場で変える。保存は裏で。失敗したら元に戻して1行で知らせる（画面全体は読み直さない）
+  go.onclick=()=>{
+    const ds={}, ps={}; Object.keys(ins).forEach(k=>{ if(ins[k].value||pre[k]) ds[k]=ins[k].value; if(per[k].ym.value||ppre[k]) ps[k]={ym:per[k].ym.value,part:per[k].pt.value}; });   /* 前に入っていたものを消したら、消す */
+    const snap=JSON.parse(JSON.stringify({sched:g.sched||null,handLabel:g.handLabel,handT:g.handT})), n=caseSeq(g.key);
+    const s2=g.sched=g.sched||{}; if(sel.value){ s2.type=sel.value; s2.typeSet=true; } else s2.typeSet=false;
+    if(rt.value!==''){ s2.rate=Number(rt.value); s2.rateSet=true; s2.build=Math.round(90*Number(rt.value)/100); }
+    if(ds['引渡']){ const d=new Date(ds['引渡']+'T00:00:00'); g.handLabel=(d.getMonth()+1)+'/'+d.getDate(); g.handT=d.getTime(); }
+    else if(ps['引渡']&&ps['引渡'].ym){ const mo=Number(ps['引渡'].ym.slice(5)); g.handLabel=mo+'月'+(ps['引渡'].part||'')+'頃'; }
+    m.remove(); caseChanged(g,true);
+    gs('saveCaseInfo',g.key,sel.value,ds,rt.value===''?null:rt.value,ps)
+      .then(()=>{ if(n!==CSEQ[g.key]) return; okErr(); gs('getSchedule',g.key).then(f=>{ if(n!==CSEQ[g.key]) return; g.sched=Object.assign(g.sched||{},f); caseChanged(g,true); }).catch(()=>{}); })
+      .catch(e=>{ if(n!==CSEQ[g.key]) return; g.sched=snap.sched||undefined; g.handLabel=snap.handLabel; g.handT=snap.handT; caseChanged(g,true); niceErr(e); relErr('※'+shortCase(g.name)+'さまの日程を保存できませんでした'); }); }; }
+// Claude（ペライチの中で相談・LINEの文づくり）
+let SAMPLE=null;
+const ROLE='あなたは京都の住宅リノベ会社（有限会社ミセガマエヤ）の社長、胡内義和さんの相談相手です。日本語で、短く具体的に答えます。事実が分からないことは推測で決めつけず、確かめることとして挙げます。';
+const RULES='LINEの文を頼まれたら（「◯◯さんに任せる文にして」「返信の文を作って」「催促の文」など）、LINEにそのまま貼れる文だけを書く（前置きや説明は付けない）。です・ます調で短く、理由を1行添える。確かめていない日程・金額・約束は足さず、決まっていないところは（　　）にする。任せる文は「◯◯さん」＋何を＋いつまでに＋いつ報告してほしいか（相手が分からなければ「◯◯さん」のまま）。返信の文は、受け取ったこと＋次にどうするか。相談には、短く具体的に答える。';
+const ASK1='このカードは大事な判断です（期限が3日以内／金額が100万円以上／クレーム・事故・近隣／社外に出る約束／人事のどれか）。社長の最初の言葉に、どうなると思うかの予想や、そう考える理由が入っておらず、「急ぎ」とも言っていなければ、答える前に「どうなると予想していますか？」と1つだけ聞き返してください（ほかの質問は足さない）。予想や理由が入っている、または「急ぎ」と言っているときは、聞き返さずにそのまま答えてください。聞き返すのは、この会話で1回だけです。';
+async function runTalk(T){ const q=T.inp.value.trim(); if(!q) return; T.ans.hidden=false;
+  if(!SAMPLE){ // 鍵が無いあいだ：チームプランのClaudeを、前後のLINEのやり取りを入れた状態で開く（社長は送るを押すだけ）
+    const w=window.open('about:blank','_blank'); T.ans.textContent='LINEの前後のやり取りを読んでいます…';
+    let ctx=''; try{ ctx=await gs('talkText',T.key); }catch(e){ ctx=T.ctx.slice(0,1200)+'\n（※LINEの前後のやり取りは読めませんでした）'; }
+    const text=ROLE+'\n'+'「▼」より下の発言がいちばん新しい状態です。済んだことを、これからやることとして勧めないでください。'+'\n\n'+RULES+(T.judge?'\n\n'+ASK1:'')+'\n\n'+ctx+'\n\n社長の言葉：'+q;
+    const url='https://claude.ai/new?q='+encodeURIComponent(text);
+    if(w){ w.location.href=url; } else { const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener'; document.body.append(a); a.click(); a.remove(); }
+    T.inp.value=''; T.ans.textContent='Claudeを開きました（LINEの前後のやり取りも入れています）。'; return; }
+  T.inp.value=''; T.go.disabled=true;
+  const content=T.turns.length?q:(ROLE+'\n\n'+RULES+(T.judge?'\n\n'+ASK1:'')+'\n\n'+T.ctx+'\n\n社長の言葉：'+q);
+  const msgs=T.turns.concat([{role:'user',content}]);
+  const before=T.ans.textContent; const head=(before?before+'\n\n':'')+'▶ '+q+'\n';
+  T.ans.textContent=head+'LINEの前後のやり取りを読んで、考えています…';
+  try{ const r=await SAMPLE(msgs,{key:T.key});
+    T.ans.textContent=head+r.text; T.turns=msgs.concat([{role:'assistant',content:r.text}]); T.log.push({q, a:r.text}); T.last=r.text; T.cp.hidden=false; }
+  catch(e){ T.ans.textContent=head+'（うまく答えられませんでした：'+niceErr(e)+'）'; if(e&&e.code==='not_granted') document.body.classList.add('noai'); }
+  T.go.disabled=false; }
+// 完了のとき：やり取りの要点を「決めたこと・理由・予想」に1行ずつまとめる
+async function summarize(T,memo){ const talk=T.log.map(x=>'社長：'+x.q+'\nClaude：'+x.a).join('\n\n').slice(-4000);
+  const prompt='次は、社長とClaudeのやり取りです。社長がこの件で「決めたこと」「理由」「予想」を、それぞれ1行で書いてください。理由は社長の言葉をできるだけそのまま使う。やり取りに無いことは足さず、分からない項目は空にする。JSONだけを返す：{"decided":"","reason":"","forecast":""}\n\n件：'+T.ctx.split('\n')[0]+(memo?'\n完了のメモ：'+memo:'')+'\n\n'+talk;
+  const r=await SAMPLE(prompt,{modelTier:'quick'}); const m=String(r&&r.text||'').match(/\{[\s\S]*\}/); if(!m) return null;
+  const j=JSON.parse(m[0]); const s=x=>String(x||'').replace(/\s+/g,' ').trim().slice(0,200); return {decided:s(j.decided), reason:s(j.reason), forecast:s(j.forecast)}; }
+// 10/5：45秒たっても返らなければ失敗として知らせる（「保存しています…」のまま止めない）
+const SAVES=['saveDone','saveStep','saveStepDate','saveCaseInfo','saveMsConfirm','finishCase','saveCaseStage','saveCand','saveDaiji','saveSumi']; let WARM_T=null;
+const warm=()=>{ clearTimeout(WARM_T); WARM_T=setTimeout(()=>{ try{ google.script.run.withFailureHandler(()=>{}).warmPage(); }catch(e){} },1500); };   // 第15版：保存のあと、次に開く画面を裏で先に作る（待たない。続けて押したときは最後に1回）
+const gs=(fn,...a)=>new Promise((ok0,ng)=>{ const ok=(x)=>{ if(SAVES.indexOf(fn)>=0) warm(); ok0(x); }; const tm=setTimeout(()=>ng(new Error('時間がかかりすぎました。少したってから「更新」を押して、保存されたか確かめてください')),45000);
+  google.script.run.withSuccessHandler(x=>{clearTimeout(tm);ok(x);}).withFailureHandler(e=>{clearTimeout(tm);ng(e);})[fn](...a); });
+if(window.__AI){ SAMPLE=(m,o)=>gs('askClaude', typeof m==='string'?[{role:'user',content:m}]:m, !!(o&&o.modelTier==='quick'), (o&&o.key)||''); document.body.classList.remove('noai'); }
+// ── 第47版：画面の組み立て（案件のタブ） ──
+const VER_LABEL='みんなのペライチ 第52.4版';
+{ const vn=document.getElementById('vno'), m=VER_LABEL.match(/第[\d.]+版/); if(vn&&m) vn.textContent=m[0]; }
+const DAY=86400000, NOW=Date.now(), WAIT_BACK_DAYS=3, BACK_MIN=5;   // 任せたことが「対応」に戻る日数（仮3日）・「すべて」に戻るまでの分（仮5分）
+const isOwnerName=window.__NAME==='社長';
+// 第49.6版（統括の点検表5）：画面に出す名前。社長は「胡内（社長）」（中の名前「社長」は変えない。名前で探している所があるため）
+const dispName=n=>String(n||'')==='社長'?'胡内（社長）':String(n||'');
+document.getElementById('nm').textContent='すっきりナビ';
+document.getElementById('upd').textContent=dispName(window.__NAME)+(D.made?'・'+D.made:'');
+document.title='すっきりナビ '+(D.date||'');
+const SAVES2=['saveCaseMove'];
+// 画面の切り替え（下のボタン5つ）
+// 10/15 統括（社長の決定）：画面の名前は「私の仕事」。下のボタンは「私の仕事」「予定」の2つ（案件・完了はいったん出さない。中のプログラムは残す）
+const VW={}, NAV=[['mine','私の仕事'],['cases','案件'],['sched','予定'],['done','完了']], NAV_SHOW=['mine','sched'];
+NAV.forEach(([k])=>{ VW[k]=h('div','view n-'+k); P.append(VW[k]); });
+const nav=h('nav','n-nav'), navIn=h('div'); nav.append(navIn); const NB={};
+NAV.filter(([k])=>NAV_SHOW.indexOf(k)>=0).forEach(([k,l])=>{ const b=h('button',null,l); b.type='button'; b.onclick=()=>go(k); NB[k]=b; navIn.append(b); }); document.body.append(nav);
+const hdr=document.querySelector('.bar'); const setHH=()=>document.documentElement.style.setProperty('--hh',hdr.offsetHeight+'px');
+// ── 件（台帳から届いたもの）──
+const IT=[], BYK={};
+const addIt=(x,sec)=>{ const key=x.key||(sec+'|'+(x.kind||'line')+'|'+(x.title||'')); const o={k:hash(key),key,it:x,sec,i:IT.length}; IT.push(o); BYK[o.k]=o; return o; };
+(D.todo||[]).forEach(x=>addIt(x,'todo')); (D.worry||[]).forEach(x=>addIt(x,'worry')); (D.waiting||[]).forEach(x=>addIt(x,'wait'));
+const IT0={todo:(D.todo||[]).length,worry:(D.worry||[]).length,wait:(D.waiting||[]).length};
+let DONE=window.__DONE||{}; const GIVEN={};   // GIVEN：この画面で任せた件（台帳へは送ってある）
+// 10/17 会社の大事なこと（大事なこと.js）：サーバーが並べた行（DJ）と、その人の一覧の同じ件の印（it.daiji）。DJON＝出している行の印、DJX＝この画面で外した・済んだ行
+const DJ=(D.daiji&&D.daiji.rows)||[], DJSHOW=(D.daiji&&D.daiji.show)||3, DJON={}, DJX={}; DJ.forEach(r=>{ DJON[r.id]=r; });
+// 10/17 外してよさそうな件（サーバーが it.cand の印を付けた件）：CANDX＝この画面で外した（out）・残した（keep）件、CSEL＝「残す」を選んでいる件
+const CANDX={}, CSEL={};
+// 10/17 済んだかもの件（サーバーが it.sumi の印を付けた件）：SUMX＝この画面で残した（keep）件、SSEL＝「残す」を選んでいる件、SUMI＝いま1行の中に出す件
+const SUMX={}, SSEL={}; let SUMI=[];
+const isDone=o=>!!DONE[o.k];
+const secOf=o=>GIVEN[o.k]?'wait':o.sec;
+const dueOf=o=>secOf(o)==='wait'?null:o.it.due;
+const isHot=o=>{ const d=dueOf(o); return !!(d&&d.level==='hot'); };
+// 第50.8版（総点検の二重1）：期限が過ぎたかはサーバーが数えた日数（overDays）だけで決める（文字を読み直さない）
+const isOver=o=>!!(dueOf(o)&&(o.it.overDays||0)>0);
+// 任せたこと：back＝ペライチの中の相手が完了した（対応に1回出す）／stale＝返事のないまま3日（まとめて1行）／quiet＝出さない
+function waitDays(o){ const it=o.it, d=it.delegated; if(GIVEN[o.k]) return 0; if(d&&d.at) return (NOW-d.at)/DAY; return it.waitDay||0; }   // 第51.1版：任せて何日目はサーバーの数（waitDay）を読む
+function bucket(o){ if(isDone(o)) return 'done'; if(DUP[o.k]) return 'dup'; if(HFOLD[o.k]) return 'hfold'; return bucket0(o); }
+function bucket0(o){ const s=secOf(o); if(s!=='wait') return o.it.daiji&&DJON[o.it.daiji]&&!DJX[o.it.daiji]?'daiji':o.it.sumi&&!SUMX[o.k]?'sumi':CANDX[o.k]==='out'?'gone':o.it.cand&&!CANDX[o.k]?'cand':o.it.kind==='stage'?'kotei':s; const d=o.it.delegated; if(!GIVEN[o.k]&&d&&d.to&&o.it.doneBy) return 'back'; if(!GIVEN[o.k]&&String(o.it.hint||'').trim()) return 'reply'; return waitDays(o)>=WAIT_BACK_DAYS?'stale':'quiet'; }
+const ckOf=o=>o.it.caseKey||'';
+// 10/17 社長の求め（第52.3版）：件が起きた日（サーバー bornOf_）。2行目の頭に小さく「10/12 発生」。元の日が分からない件は「（取り込み日）」
+const bornTx=it=>it&&it.bornS?it.bornS+' 発生'+(it.bornIn?'（取り込み日）':''):'';   /* 日付の形はサーバー（bornS） */
+// 10/17 社長の決定（第52.3版）：工程表（段階の仕事）は人ごとに1件「工程表の未着手 ◯件」にまとめる（bucket＝kotei）。中は小さなチェック項目（押すと済。ふつうの完了と同じ書き方）
+let KOTEI=[], KTON=false; const GCHK=new Set();   /* KTON：工程表の1件を出すか（まだの項目がある・この画面で済にした項目があるあいだは出す＝その場で元に戻せる） */   /* GCHK：この画面で押して済にした件（開いた中に線を引いて残し、もう一度押すと元に戻す） */
+const ktCk=o=>ckOf(o)||(o.it.kt&&o.it.kt.ck)||'', ktSt=o=>o.it.stage||(o.it.kt&&o.it.kt.st)||0;   /* 案件と段階はサーバー（段階.js stageKt_） */
+// ── 案件（タブの順＝横断工程と同じ、引渡が近い順。工程の無い見込みのお客様はその後）──
+const GL=((D.genba||{}).list||[]).slice().sort((a,b)=>(a.handT==null)-(b.handT==null)||(a.handT||0)-(b.handT||0)||String(a.name).localeCompare(String(b.name),'ja'));
+const CASEN={}; GL.forEach(g=>{ CASEN[g.key]=g.name; }); IT.forEach(o=>{ const k=ckOf(o); if(k&&!CASEN[k]) CASEN[k]=o.it.caseName||'案件'; });
+const CASEORD=GL.map(g=>g.key).concat(Object.keys(CASEN).filter(k=>!GL.some(g=>g.key===k)));
+const shortCase=n=>String(n||'').replace(/\s.*$/,'').replace(/（.*$/,'').replace(/(さま邸|様邸|さん邸|さま|様|邸)$/,'');
+const tagOf=n=>{ const m=String(n||'').match(/（(.+?)）/); return m?m[1]:''; };
+const caseLabel=k=>shortCase(CASEN[k])+'さま';
+// 案件のタブの中では、題名の頭の案件名（例「古川さま邸：」）を外す（第45.3版と同じ）
+const trimCase=(t,k)=>{ const sur=shortCase(CASEN[k]); if(!sur) return t; const re=new RegExp('^'+sur.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(さま邸|様邸|さん邸|さま|様|邸)[：:]\\s*'); return t.replace(re,'')||t; };
+const grpShort=it=>String(it.grp||'').slice(0,14).replace(/[（(][^）)]*$/,'');   // 10/16 確かめ役：14字で切って閉じかっこが無くなるときは、かっこの前まで
+const jobWho=w=>w==='まだ決めていない'?'担当まだ':String(w).replace(/^([^\s　（(]+)[\s　].*さん$/,'$1さん');   // 「中島 直樹さん」→「中島さん」
+const STAGE_NM=(D.stg||{}).names||{};   // 第51.0版：段階の名前はサーバー（段階.js STAGE_NAME）から受け取る
+// 第49.5版（方針を軸に気づく。方針.js）：監督を渡す件（目印ごと）・気づき・同じ件かもの組・これを先に・前の件にまとめる日数
+const DEC=(D.decide&&D.decide.items)||{}, HAND=(D.hand&&D.hand.items)||{}, KIZ=D.kiz||{}, SAMEP=D.same||[], OLDD=D.oldDays||{};
+let FIRST=D.first||null;
+// 第49.8版：いま動くことの「あとで」。LATER＝いま外している件の目印（押したらすぐ足す）、LBACK＝戻した件（理由の頭に前後関係）
+const LATER=new Set((D.later&&D.later.open)||[]), LBACK=(D.later&&D.later.back)||{};
+const isBigO=o=>!!o.it.big;   // 第51.1版（二重 #12）：大きな仕事かはサーバー（方針.js isBig_）が印を付ける。どれを1つ出すかは、押した直後に次へ進むため画面でも選ぶ（決まりは bigNow_ と同じ：監督を渡す件が先、次に会社の基盤づくり、台帳の順）
+const HAND_DO=['下書きを直す','新しい監督と30分話す','グループで紹介する'];
+// 第49.6版（10/15 社長「僕の画面もスタッフの画面も同じ形式に」）：開いたときは全員同じ最初の形（種類で分ける）。人ごとに覚えた見方では始めない（切り替えはその場だけ）
+const S={view:'mine',tab:'all',sub:'',mode:'kind'};
+const OPEN={};   // 開いている件：{det, give, ai}
+// 10/12（47章）：同じ題の件は1つだけ出す（台帳には両方残す）。出す方＝自分が動く件→任せた件の順。出す方を完了にすると、隠した方も完了にする
+let DUP={}, DUPOF={}, SAMEOF={}, HFOLD={}, BIGK='', DECIN={};
+function markDup(){ DUP={}; DUPOF={}; SAMEOF={}; HFOLD={}; BIGK=''; const rk=o=>{ const b=bucket0(o); return b==='todo'||b==='worry'||b==='back'?0:b==='reply'||b==='stale'?1:2; }, keep={};
+  IT.filter(o=>!isDone(o)&&CANDX[o.k]!=='out').sort((a,b)=>rk(a)-rk(b)||a.i-b.i).forEach(o=>{ const t=o.it.dk||(String(o.it.title||'').trim()+(o.it.kind==='stage'?'|'+ckOf(o):'')); if(!String(o.it.title||'').trim()) return; const k0=keep[t]; if(k0==null){ keep[t]=o.k; return; } DUP[o.k]=k0; (DUPOF[k0]=DUPOF[k0]||[]).push(o.k); });
+  // 第49.5版：AIの「同じ件かも」は1行にまとめるだけ（完了は1件ずつ。もう1つは聞いてから）
+  const lv=o=>!!o&&!isDone(o)&&!DUP[o.k]&&['todo','worry'].indexOf(bucket0(o))>=0;
+  SAMEP.forEach(([a,b])=>{ const oa=IT.find(o=>o.key===a), ob=IT.find(o=>o.key===b); if(!lv(oa)||!lv(ob)||oa===ob||SAMEOF[ob.k]) return; DUP[ob.k]=oa.k; (SAMEOF[oa.k]=SAMEOF[oa.k]||[]).push(ob.k); });
+  // 大きな仕事は1つだけ前に（監督を渡す件が先）。出している監督を渡す件の案件の、監督の段階の仕事はその件の中に畳む
+  const bg=IT.filter(o=>isBigO(o)&&!isDone(o)&&!DUP[o.k]&&['todo','worry'].indexOf(bucket0(o))>=0).sort((a,b)=>(!/^policy/.test(a.key))-(!/^policy/.test(b.key))||a.i-b.i); BIGK=bg.length?bg[0].k:'';
+  // 第49.6版：発注の形と監督を決める件は、同じ案件の監督を渡す件が出ていれば、その中にまとめる（二重に出さない）
+  // 段階の仕事「発注の形と監督を決める」は、同じ案件の決めることの件にまとめる（決めたら一緒に完了）
+  IT.forEach(o=>{ if(o.it.kind!=='stage'||!/発注の形と監督を決める/.test(o.it.title||'')||isDone(o)||DUP[o.k]) return; const dk=IT.find(x=>DEC[x.key]&&ckOf(x)&&ckOf(x)===ckOf(o)&&!isDone(x)); if(dk){ DUP[o.k]=dk.k; (DUPOF[dk.k]=DUPOF[dk.k]||[]).push(o.k); } });
+  DECIN={}; IT.forEach(o=>{ if(!DEC[o.key]||isDone(o)||DUP[o.k]) return; const ho=IT.find(x=>HAND[x.key]&&HAND[x.key].ck===ckOf(o)&&!isDone(x)&&!DUP[x.k]); if(ho){ DUP[o.k]=ho.k; DECIN[ho.k]=o.k; } });
+  const hk=bg.length&&HAND[bg[0].key]?HAND[bg[0].key].ck:''; if(hk) IT.forEach(o=>{ if(o.it.kind==='stage'&&o.it.role==='監督'&&ckOf(o)===hk&&!isDone(o)&&!DUP[o.k]) HFOLD[o.k]=1; }); }
+const prio=(a,b)=>{ const r=o=>{ const b0=bucket(o); return b0==='reply'?1:b0==='stale'?2:0; }; const hd=o=>isBigO(o)&&o.k!==BIGK?1:0; return (hd(a)-hd(b))||(!!a.it.low-!!b.it.low)||(r(a)-r(b))||(isHot(b)-isHot(a))||(isOver(b)-isOver(a))||(a.i-b.i); };   // 第48版（企画1章）：自分が動く件（対応・懸念・戻ってきた）が上、AIの「返事あり」はその下、返事なしはいちばん下（直接並べるのは 10/11 社長のとおり）
+// 第49.5版（10/15 社長「出し方がみんな違う」）：いま動くことは、どのタブ・見方・人でも私の仕事のいちばん上に出す。その件は下の一覧から外す（同じ件を2か所に出さない）
+let PKS=new Set(); const planKeys=()=>{ const k=new Set(); planNow().forEach(sp=>sp.os.forEach(o=>k.add(o.k))); return k; };
+function model(){
+  djLive();   /* 10/17：自分の完了で消えた会社の大事なことを先に外す（その行の件を元の置き場所へ戻してから数える） */
+  markDup();
+  SUMI=[]; IT.forEach(o=>{ if(bucket(o)==='sumi') SUMI.push(o); }); SUMI.sort(prio);
+  KOTEI=IT.filter(o=>bucket(o)==='kotei').sort(ktOrd); KTON=KOTEI.length>0||[...GCHK].some(k=>BYK[k]&&isDone(BYK[k])&&BYK[k].it.kind==='stage');   /* 10/17 第52.3版：工程表の未着手（一覧・案件のタブ・いま動くことには出さない。すべてのタブの1件の中だけ） */   /* 10/17：済んだかもの件（最初の画面の1行の中だけ） */
+  PKS=planKeys(); const live=IT.filter(o=>{ const b=bucket(o); return (b==='todo'||b==='worry'||b==='back')&&!PKS.has(o.k); });   // 10/12（47章・社長の決定）：自分が動く件だけ。任せた件の「済んだかも」「返事なし」は対応の上に1行でまとめ、押せば開く（同じ件を2か所に出さない）
+  const wall=IT.filter(o=>{ const b=bucket(o); return b==='reply'||b==='stale'||b==='quiet'; }).sort((a,b)=>(bucket(b)==='reply')-(bucket(a)==='reply')||(!!GIVEN[b.k])-(!!GIVEN[a.k])||waitDays(b)-waitDays(a)||a.i-b.i);   // いま任せたものも上   // 返事が来たものが上   // 10/10 社長：下のタブに「任せた」（件数は出さない）
+  const noCase=o=>!ckOf(o)||!CASEN[ckOf(o)];
+  const cand=IT.filter(o=>bucket(o)==='cand').sort(prio);   // 10/17：外してよさそうな件は、ふだんの一覧から外して、一覧のいちばん上の1行の中だけに出す（タブの件の数にも入れない）
+  const mk=(k,label,items,ws,cd)=>({k,label,items:items.sort(prio),waits:ws,stale:ws.filter(o=>bucket(o)==='stale'),reply:ws.filter(o=>bucket(o)==='reply'),cand:cd});
+  const tabs=[mk('all','すべて',live.slice(),wall.slice(),cand.slice())];
+  CASEORD.forEach(k=>{ const L=live.filter(o=>ckOf(o)===k), Wk=wall.filter(o=>ckOf(o)===k), Ck=cand.filter(o=>ckOf(o)===k); if(L.length||Wk.length) tabs.push(mk(k,caseLabel(k),L,Wk,Ck)); });   // 任せたことだけの案件にもタブ（外してよさそうな件だけの案件には作らない。「すべて」の1行に出る）
+  const ot=live.filter(noCase), Wo=wall.filter(noCase), Co=cand.filter(noCase); if(ot.length||Wo.length) tabs.push(mk('other','案件以外',ot,Wo,Co));
+  return tabs;
+}
+// 10/13（49章・社長「頭の整理をしてあげて。何をどの順番でやるかを判断してあげる」）：今日の順番。順番と理由は取り込みのAIが決めて残した物（D.plan）を出すだけ。画面では並べ直さない
+// 10/14：画面に出ない件だけの順番は外し、残りで1から番号を振る（前は「1・4・5」と飛んだ）
+const PLAN=(D.plan&&D.plan.steps||[]).map(s=>({t:s.t,why:s.g&&s.g.why!=null?s.g.why:s.why,g:s.g||null,os:(s.keys||[]).map(x=>IT.find(o=>o.key===x)).filter(Boolean)})).filter(s=>s.os.length).map((s,i)=>Object.assign(s,{n:i+1}));   /* 10/17 第52.3版：g＝資料と手紙の件が2件以上の項目（サーバー 順番.js planGroup_ が印を付ける。why は組の数を外した理由） */
+const live0=o=>{ const b=bucket(o); return b==='todo'||b==='worry'||b==='back'; };
+// 第49.5版（モグラたたきの決まり④）：人が「これを先に」した件は、AIが作り直すまで1番に（AIが作り直すときも1番に置く。順番.js）
+const planNow=()=>{ let L=PLAN.map(s=>Object.assign({},s,{all:s.os,os:s.os.filter(o=>live0(o)&&!LATER.has(o.key))})).filter(s=>s.os.length);
+  const f=FIRST&&(FIRST.local||!(D.plan&&D.plan.atMs)||FIRST.at>D.plan.atMs)?IT.find(o=>o.key===FIRST.key&&live0(o)):null;
+  if(f){ const s=L.find(x=>x.os.indexOf(f)>=0)||{t:f.it.title||'',why:'',os:[f]}; L=[s].concat(L.filter(x=>x!==s)); }
+  // 第49.6版（点検表2）：AIの順番がまだ無い・全部済んだときも、いま動くことは必ず出す（並びのいちばん上の件を1つ）
+  if(!L.length) L=IT.filter(x=>{ const b=bucket(x); return (b==='todo'||b==='worry')&&!LATER.has(x.key); }).sort(prio).slice(0,5).map(o=>({t:o.it.title||'',why:'',os:[o]}));
+  return L.map((s,i)=>Object.assign({},s,{n:i+1})); };
+// 第49.5版（D1）：期限を過ぎて OLDD.over 日・発言から OLDD.quiet 日たった件は、消さずに一覧のいちばん下の「前の件」にまとめる。期限が近い件・至急の件・段階の仕事などはまとめない
+function isOld(o){ const it=o.it; if(bucket(o)==='back'||it.kind==='stage'||it.kind==='base'||it.kind==='handover') return false; const d=dueOf(o)||{}, tx=String(d.text||'');
+  if(d.level==='soon'||(d.level==='hot'&&!isOver(o))||it.dueSoon) return false; if(isOver(o)) return it.overDays>=OLDD.over;
+  return !!(it.said&&(NOW-it.said)/DAY>=OLDD.quiet); }
+const oldDays=o=>isOver(o)?(o.it.overDays||0):(o.it.quietDays||0);
+const splitOld=L=>[L.filter(o=>!isOld(o)),L.filter(isOld).sort((a,b)=>oldDays(b)-oldDays(a))];   // 10/16 確かめ役：日数の多い順
+// 第51.4版（#22 統括の決定）：しばらく動きのない件の1件ずつに、まとめた理由
+const oldWhy=o=>isOver(o)?'期限を'+o.it.overDays+'日過ぎ':(o.it.quietDays||0)+'日前の発言から動きなし';
+function groups(t,mode){
+  const pl=[], PK=new Set(), kt=t.k==='all'&&KTON?KOTEI:null, ktH=!!kt&&kt.some(o=>isHot(o)||isOver(o));   /* 10/17 第52.3版：工程表の1件は「すべて」の対応（至急の分け方では至急かそのほか）に */
+  const all=t.items;
+  const wt={k:'wait',label:'任せた',items:t.waits.filter(o=>bucket(o)==='quiet'),wait:true};   // 10/12：済んだかも・返事なしは対応の上の1行の中
+  if(mode==='hurry'){ const hh=all.filter(o=>isHot(o)&&!isOver(o)), ov=all.filter(o=>isOver(o)); return [{k:'h',label:'至急',items:hh,kt:ktH?kt:null},{k:'o',label:'期限が過ぎた',items:ov},{k:'r',label:'そのほか',items:all.filter(o=>hh.indexOf(o)<0&&ov.indexOf(o)<0),stale:true,kt:ktH?null:kt},wt]; }
+  const [t1,t0]=splitOld(all.filter(o=>bucket(o)!=='worry')), [w1,w0]=splitOld(all.filter(o=>bucket(o)==='worry'));
+  return [{k:'todo',label:'対応',items:t1,old:t0,stale:true,kt},{k:'worry',label:'懸念',items:w1,old:w0},wt];
+}
+// ── 上の帯・今日の行 ──
+// 10/10 社長：上の「今日の予定」の行はやめた（予定は下の「予定」で今日から見る）
+// ── じぶんの ──
+const M=VW.mine; const top=h('div','n-top'); M.append(top);
+if(window.__PAIR&&!window.__APP){ const pb=document.createElement('div'); pb.style.cssText='margin:12px 0;padding:16px;border-radius:12px;background:#1E2A4A;text-align:center;line-height:1.7';
+  const pt=document.createElement('div'); pt.textContent=dispName(window.__NAME)+(isOwnerName?'':'さん')+'のすっきりナビを、ここで使います'; const pbt=document.createElement('button'); pbt.type='button'; pbt.textContent='ここで使う'; pbt.style.cssText='font:inherit;font-size:18px;font-weight:700;border:0;border-radius:10px;padding:12px 28px;margin-top:10px;background:#5B8CFF;color:#fff';
+  const pm=document.createElement('div'); pm.style.cssText='font-size:13px;opacity:.8;margin-top:8px'; pm.textContent='';
+  pbt.onclick=()=>{ pbt.disabled=true; pbt.textContent='設定しています…'; google.script.run.withSuccessHandler(()=>{ pb.remove(); toast('つながりました'); }).withFailureHandler(e=>{ pbt.disabled=false; pbt.textContent='ここで使う'; pm.textContent='設定できませんでした（'+niceErr(e)+'）'; }).appPairBind(window.__PAIR); };
+  pb.append(pt,pbt,pm); top.append(pb); }
+// 第49.6版（点検表1・3）：問い合わせの1行も、いま動くことの中に同じ形で出す（alertSteps）
+if(false){ const a=h(D.inq.url?'a':'div','inqline'+(D.inq.err?' err':''),D.inq.text+(D.inq.url?'　›':'')); if(D.inq.url){ a.href=D.inq.url; a.target='_blank'; } top.append(a); }   // 第44版：問い合わせの1行
+(String(D.summary||'').match(/※[^※]+/g)||[]).forEach(w=>top.append(h('div','warnline',String(w).trim())));
+// 10/15 第49.1版（社長の決定「異常警報だけ」）：止まっている案件・止まっている仕事。中身がある人（社長）にだけ出る。押すと案件のページ／一覧
+// 第49.6版（統括の点検表3）：止まっている案件・止まっている仕事・監督の欄の知らせは、いま動くことと同じ形の中に出す（paintPlan。別の赤い枠はやめた）
+if(false){ const ab=h('div','n-alert');
+  (D.alerts||[]).forEach(a=>{ const b=h('button','al',a.text+' ›'); b.type='button'; b.onclick=()=>openCase(a.caseKey); ab.append(b); });
+  const NO=D.noOne||[]; if(NO.length){ const b=h('button','al','止まっている仕事 '+NO.length+'件 ›'), L=h('div','al-l'); L.hidden=true; b.type='button';
+    NO.forEach(x=>{ const r=h('div','cp-j'); r.append(h('span','v',x.c?x.c+'：'+x.t:x.t),h('span','w',jobWho(x.who==='未定'?'まだ決めていない':x.who))); L.append(r); }); b.onclick=()=>{ L.hidden=!L.hidden; }; ab.append(b,L); }
+  top.append(ab); }
+const PLB=h('div','n-plb'); M.append(PLB);
+const TBW=h('div','n-tbw'), TB=h('div','n-tabs'), RH=h('button','n-rh','至急 ›'); RH.type='button'; RH.hidden=true; TBW.append(TB,RH); M.append(TBW); const FP=h('div','n-fp'); M.append(FP);
+const PH=h('div'), SB=h('div','n-sb'), LS_=h('div','n-list'); FP.append(PH,SB,LS_);
+const BOT=h('div','n-bottom'); M.append(BOT);
+let TABS=[];
+function curTab(){ return TABS.find(t=>t.k===S.tab)||TABS[0]; }
+function paintTabs(){ const keep=TB.scrollLeft; TB.textContent='';
+  TABS.forEach(t=>{ const b=h('button',(t.k===S.tab?'on':'')+(t.k!=='all'&&t.items.some(isHot)?' hot':'')); b.type='button'; b.dataset.k=t.k;
+    b.append(h('b',null,t.label),h('em',null,(t.k!=='all'&&t.k!=='other'&&tagOf(CASEN[t.k])?tagOf(CASEN[t.k])+'・':'')+(t.items.length+(t.k==='all'&&KTON?1:0)))); TB.append(b); });   /* 10/17 第52.3版：工程表の未着手は1件と数える */
+  TB.scrollLeft=keep; hint(); }
+function hint(){ if(S.view!=='mine'){ RH.hidden=true; return; } const r=TB.getBoundingClientRect(); const hid=[...TB.querySelectorAll('button.hot')].filter(x=>x.getBoundingClientRect().left>r.right-30);
+  RH.hidden=!hid.length; if(hid.length) RH.onclick=()=>TB.scrollTo({left:hid[0].offsetLeft-TB.offsetLeft-84,behavior:'smooth'}); }   // 隠れたタブに至急があるとき、タブの右端に
+TB.addEventListener('scroll',hint,{passive:true});
+// 第48版（企画1章）：見出しは名前と引渡の1行（工程の棒は横断工程で見るのでやめた）
+function paintHead(t){ PH.textContent=''; if(t.k==='all'||t.k==='other') return; const g=GL.find(x=>x.key===t.k); const ph=h('div','n-ph');
+  const od=ordOf(g); ph.append(h('div','nm',CASEN[t.k]||''),h('small',null,g?handOf(g):'工程なし')); const og=h('button','go','案件 ›'); og.type='button'; og.onclick=()=>openCase(t.k); ph.append(og); PH.append(ph); if(od) PH.append(h('div','n-phob'+(od.k==='まだ'?' un':''),od.text)); }   // 10/14：監督と発注の形は名前の下の行（同じ行だと名前が切れた）
+// 10/14 統括（社長の決定）：監督と発注の形（お客様リスト②を読むだけ。列がまだ無いあいだは何も出さない）
+const ordOf=g=>{ const f=g&&g.info; if(!f||f.none||(f.order==null&&f.boss==null)) return null; const o=String(f.order||''), b=String(f.boss||'').replace(/^まだ.*$/,'');
+  const k=/分離/.test(o)?'分離発注':/工務店/.test(o)?'工務店に任せる':'まだ'; return {k, short:k==='分離発注'?'分離':k==='工務店に任せる'?'工務店':'', boss:b, text:(k==='まだ'?'発注の形 まだ':k)+(b?'・監督 '+b:k==='分離発注'?'・監督 まだ':'')}; };
+const handOf=g=>g.handLabel==='引渡済'?'引渡済':g.handLabel&&g.handLabel!=='未確認'?'引渡 '+String(g.handLabel).replace(/頃$/,''):'引渡 未定';
+const SPL=(D.stg||{}).split||0;   // 第51.1版（二重 #10）：棒の区切りはサーバー（案件.js SEG_・BAR_SPLIT_）から受け取る
+const barPos=g=>g.handLabel==='引渡済'?100:g.now==null||!SPL?null:(g.bar==='B'?SPL+g.now*(100-SPL)/100:g.now*SPL/100);
+// 第48版（企画1章）：今どこ。押すボタンは8つ（値は案件の表の「済んだ節目（人）」に入る）。アフター・終わりの案件は、案件の一覧と横断工程に出さない
+const END_ST=(D.stg||{}).end||[], isEnd=g=>!!g&&END_ST.indexOf(g.stage)>=0;
+const STG_BTN=[['現調','現調'],['プレゼン','プレゼン'],['設計契約','契約'],['解体','解体'],['木完','木完'],['引渡','引渡'],['アフター','アフター'],['終わり','終わり']];
+const STG_MS=(D.stg||{}).ms||[];   // 第51.0版：節目の位置はサーバー（案件.js MS）から受け取る（押した直後の仮の位置。次に開いたときは裏で計算した位置）
+const stgLabel=k=>{ const b=STG_BTN.find(x=>x[0]===k); return b?b[1]:k; };
+const stgOn=k=>{ if(!k) return ''; if(STG_BTN.some(x=>x[0]===k)) return k; const i=STG_MS.findIndex(x=>x[0]===k); if(i<0) return ''; for(let j=i;j>=0;j--){ if(STG_BTN.some(x=>x[0]===STG_MS[j][0])) return STG_MS[j][0]; } return ''; };   // 表に「本着工」などが入っているときは、その手前のボタンに印
+function paintSub(G,cur){ SB.textContent=''; G.forEach(g=>{ const b=h('button',g.k===cur?'on':null); b.type='button'; b.dataset.s=g.k; b.append(document.createTextNode(g.label)); if(!g.wait) b.append(h('em',null,String(g.items.length+((g.old||[]).length)+(g.kt?1:0)))); /* 10/13：今日の順番の件も数える */ SB.append(b); }); }
+function metaOf(o,showCase){ const it=o.it, b=bucket(o), m=h('div','m'), add=(t,c)=>{ if(!t) return; if(m.childNodes.length) m.append(document.createTextNode('・')); m.append(c?h('span',c,t):document.createTextNode(t)); };
+  add(bornTx(it),'bn');   /* 10/17 第52.3版：どの行も頭に「10/12 発生」 */
+  if(b==='sumi'){ add('済んだかも：'+hintText(it.sumi),'me'); if(showCase) add(ckOf(o)&&CASEN[ckOf(o)]?caseLabel(ckOf(o)):grpShort(it)); return m; }
+  if(b==='cand'){ add(it.cand.m+'：'+it.cand.why,'me'); if(showCase) add(ckOf(o)&&CASEN[ckOf(o)]?caseLabel(ckOf(o)):grpShort(it)); return m; }   /* 10/17：外してよさそうな件は、印と理由だけ */
+  const old=isOld(o); if(old) add(oldWhy(o),'ow');   // しばらく動きのない件の中では、期限の字と至急は出さない（理由と同じことを2回言わない）
+  const d=dueOf(o), dt=d&&d.text?String(d.text).replace(/^期限：/,''):'';
+  if(b==='back'){ add(it.doneBy?doneText(it.doneBy):'相手が完了しました','me'); add('確かめて完了に'); }
+  else if(b==='reply'){ add('済んだかも：'+hintText(it.hint),'me'); }   // 第48版（10/11 社長）：「返事：」「完了？」をやめ、だれが何をしたかの一文
+  else if(secOf(o)==='wait'){ if(b==='stale') add('返事なし','o'); if(it.who) add('相手 '+it.who); if(it.since) add(it.since,b==='stale'?'o':null); }
+  else { if(!old&&isHot(o)&&!/至急/.test(dt)) add('至急','h'); if(S.mode!=='kind'&&b==='worry') add('懸念'); if(dt&&!old) add(dt,/至急/.test(dt)||isHot(o)&&!isOver(o)?'h':isOver(o)?'o':null); if(!old&&it.doneBy) add(doneText(it.doneBy),'o'); if(!old&&it.hint) add('済んだかも：'+hintText(it.hint),'me'); }   // 10/12：生の手がかりを出さない（reply と同じ形）。10/16 確かめ役：しばらく動きのない件の中では理由だけ
+  if(it.mk==='不安そう'||it.anxious) add('不安そう','h');   // 10/15：お客様が不安そう（社長の画面）
+  if(it.kind==='stage'&&STAGE_NM[it.stage]) add(STAGE_NM[it.stage]+'の段階');
+  if(it.kind==='base') add('会社の基盤づくり');   // 10/15 第49.1版：受け持ち表から出た段階の仕事
+  if(it.moved) add('移した','me');
+  if(it.replied) add(it.replied+' LINEで返事しました','me');
+  if(SAMEOF[o.k]) add('同じ件かも '+(1+SAMEOF[o.k].length),'me');
+  if(HAND[o.key]&&HAND[o.key].moved) add('渡し切ったかも','me');
+  if(showCase) add(ckOf(o)&&CASEN[ckOf(o)]?caseLabel(ckOf(o)):grpShort(it));
+  return m; }
+function rowOf(o,showCase,inSheet){ const it=o.it, b=bucket(o), st=OPEN[o.k]||{}, c=h('div','n-cd'+(b!=='back'&&b!=='cand'&&b!=='sumi'&&isHot(o)?' hot':'')+(st.det?' open':'')+(b==='cand'?' cd':'')); c.dataset.k=o.k;
+  const r=h('div','row'), bd=h('div','bd'), hd=HAND[o.key], ck=ckOf(o); bd.dataset.act='det';
+  // 第49.5版：監督を渡す件は結論と「なぜなら：」の2行。段階の仕事は、案件のタブの外ではお客様の名前を頭に（台帳の題は書き換えない）。気づきは結論を1行
+  const tt=hd?(hd.to?hd.name+'の監督を、'+hd.to+'に渡しましょう。':hd.name+'の監督を渡しましょう（渡す先はまだ決まっていません）'):showCase?(it.kind==='stage'&&ck&&CASEN[ck]?caseLabel(ck)+'邸：'+(it.title||''):(it.title||'')):trimCase(it.title||'',ck);
+  bd.append(h('div','t',tt)); if(it.kind==='num') bd.append(h('div','hw',(it.cands||[]).filter(c=>c.no&&!c.ref).length?'②の候補 '+(it.cands||[]).filter(c=>c.no&&!c.ref).length+'件':'②に名字の合う行がありません')); else if(it.kind==='sync') bd.append(h('div','hw','②：'+(it.v2||'空')+'／ペライチ：'+(it.vp||'空'))); else if(it.kind==='letter') bd.append(h('div','hw',letterWhy(it))); else if(DEC[o.key]) bd.append(h('div','hw',decLine(o.key))); else if(hd) bd.append(h('div','hw',hd.why)); else if(KIZ[o.key]) bd.append(h('div','kz',KIZ[o.key].t)); bd.append(metaOf(o,showCase)); r.append(bd);
+  const ac=h('div','ac'); if(b==='todo'||b==='worry'){ const g=h('button','gv'+(st.give?' on':''),'任せる'); g.type='button'; g.dataset.act='give'; ac.append(g); }
+  if(b==='sumi'){ const kp=h('button','ck'+(SSEL[o.k]?' on':''),SSEL[o.k]?'✓残す':'残す'); kp.type='button'; kp.dataset.act='skeep'; ac.append(kp); }   /* 10/17：済んだかもの件は「残す」だけ（上の「完了」でまとめて） */
+  else if(b==='cand'){ const kp=h('button','ck'+(CSEL[o.k]?' on':''),CSEL[o.k]?'✓残す':'残す'); kp.type='button'; kp.dataset.act='ckeep'; ac.append(kp); }   /* 10/17：外してよさそうな件は「残す」だけ（下の「外す」でまとめて決める） */
+  else { const dn=h('button','dn','完了'); dn.type='button'; dn.dataset.act='done'; ac.append(dn); } r.append(ac); c.append(r);
+  if(st.det) c.append(detOf(o));
+  if(st.give) c.append(giveOf(o));
+  return c; }
+function detOf(o){ const it=o.it, b=bucket(o), w=secOf(o)==='wait', d=h('div','n-det');
+  const body=w?((/(^|\n)いま[：:]/.test(it.detail||'')?it.detail:'')||it.body||''):(it.detail||it.body||'');
+  if(w&&it.who) d.append(h('div','k','相手：'+it.who)); if(w&&it.since) d.append(h('div','k','頼んだ日：'+it.since)); if(!w&&it.due&&it.due.text) d.append(h('div','k','期限：'+it.due.text));
+  if(KIZ[o.key]&&!HAND[o.key]) d.prepend(h('div','kzw',KIZ[o.key].why)); if(HAND[o.key]) d.append(handBox(o)); if(DEC[o.key]) d.append(decBox(BYK[o.k])); if(it.kind==='sync') d.append(syncBox(o)); if(it.kind==='num') d.append(numBox(o)); if(it.kind==='l2'||it.kind==='l2c') d.append(l2Box(o));
+  if(body&&!HAND[o.key]&&!DEC[o.key]&&it.kind!=='sync'&&it.kind!=='num'&&it.kind!=='l2'&&it.kind!=='l2c') d.append(sumView(body)); const m=h('div','meta'); (Array.isArray(it.src)?it.src:it.src?[it.src]:[]).forEach(s=>m.append(link(s))); if(m.childNodes.length) d.append(m);
+  const ops=h('div','n-ops'); const st=OPEN[o.k]||{};
+  const a1=h('button',st.ai?'on':null,'AI相談'); a1.type='button'; a1.dataset.act='ai'; if(SHOW_AI) ops.append(a1);   // 10/11 社長「一旦外して」：ボタンだけ出さない（中身は残す。戻すときは SHOW_AI を true に）
+  if(SHOW_MOVE&&!w&&it.kind!=='stage'&&it.kind!=='base'&&it.kind!=='handover'&&it.kind!=='decide'&&it.kind!=='letter'&&it.kind!=='sync'&&it.kind!=='num'&&it.kind!=='l2'&&it.kind!=='l2c'){ const a2=h('button',null,'別の案件へ移す'); a2.type='button'; a2.dataset.act='move'; ops.append(a2); }
+  if(SHOW_LINE_REPLY&&lineOf(o)){ const a4=h('button',null,'LINEで返事'); a4.type='button'; a4.dataset.act='reply'; ops.append(a4); }
+  if(SHOW_FIRST&&(bucket(o)==='todo'||bucket(o)==='worry')&&!PKS.has(o.k)){ const a3=h('button',null,'これを先に'); a3.type='button'; a3.dataset.act='first'; ops.append(a3); }
+  d.append(ops); if(st.ai) d.append(talkPanel(o)); return d; }
+// 第49.5版：監督を渡す件の中。下書きは押すと全文（写せる）。することは3つ。出している案件の監督の段階の仕事はここに畳む
+function handBox(o){ const hd=HAND[o.key], st=OPEN[o.k]||{}, b=h('div','n-hd');
+  if(hd.draft){ const dl=h('button','dl'); dl.type='button'; dl.dataset.act='memo'; dl.append(h('span',null,'引き継ぎメモの下書きはできています'),h('span',null,st.memo?'閉じる':'›')); b.append(dl);
+    if(st.memo){ b.append(h('div','tx',hd.memo)); if(hd.intro) b.append(h('div','tx',hd.intro)); const hb=h('div','hb'), c1=h('button',null,st.copied?'写しました':'写す'), c2=h('button',null,st.redo?'作り直しています':'作り直す'); c1.type=c2.type='button'; c1.dataset.act='copy'; c2.dataset.act='redo'; c2.disabled=!!st.redo; hb.append(c1,c2); b.append(hb); } }
+  else b.append(h('div','dl0','引き継ぎメモの下書きは、まだできていません'));
+  const ol=h('ol'); HAND_DO.forEach(x=>ol.append(h('li',null,x))); b.append(ol);
+  if(DECIN[o.k]&&BYK[DECIN[o.k]]){ const dob=BYK[DECIN[o.k]]; b.append(h('div','jh',caseLabel(ckOf(dob))+'邸の発注の形と監督を決める'),h('div','k',decLine(dob.key)),decBox(dob)); }
+  const J=IT.filter(x=>HFOLD[x.k]&&ckOf(x)===hd.ck); if(J.length){ b.append(h('div','jh','監督の仕事 '+J.length)); J.forEach(x=>b.append(rowOf(x,false))); }
+  return b; }
+// 第49.6版：発注の形と監督を決める。下書きは小さく1行。選んで「決める」を押した値だけを②に書く（saveDecide。社長だけ）
+// 第49.7版：手紙の件の理由（何日お待ちか・エリア・建物）
+const letterWhy=it=>{ const m=String(it.inqAt||'').match(/^(\d{2})\/(\d{1,2})\/(\d{1,2})/); const t=m?new Date(2000+Number(m[1]),Number(m[2])-1,Number(m[3])).getTime():0, d=t?Math.max(0,Math.floor((NOW-t)/DAY)):null;
+  return 'なぜなら：'+(d==null?'お問い合わせから':d+'日')+'お待ちです'+([it.area,it.bld].filter(Boolean).length?'（'+[it.area,it.bld].filter(Boolean).join('・')+'）':'')+'。'; };
+const decLine=k=>{ const d=DEC[k]; return '下書き：発注の形 '+d.dOrder+'・監督 '+String(d.dBoss).replace(/（.*$/,'')+'（確からしさ '+d.conf+'）'; };
+function decBox(o){ const d=DEC[o.key], st=OPEN[o.k]=OPEN[o.k]||{}, b=h('div','n-dc');
+  if(d.why) b.append(h('div','k','根拠：'+d.why)); if(d.idea) b.append(h('div','k','胡内（社長）の考え：'+d.idea));
+  const row=(lab,arr,f)=>{ const w=h('div','dr'); w.append(h('div','dl',lab)); arr.forEach(v=>{ const c=h('button',st[f]===v?'on':null,v); c.type='button'; c.dataset.act='dc'; c.dataset.f=f; c.dataset.v=v; c.dataset.dk=o.k; w.append(c); }); return w; };
+  b.append(row('発注の形',D.decide.orders,'ord'));
+  const bs=D.decide.bosses.slice(), db=String(d.dBoss).replace(/（.*$/,''); if(db&&bs.indexOf(db)<0&&!/^まだ/.test(db)) bs.splice(bs.length-1,0,db);
+  const br=row('監督',bs,'boss'), inp=h('input'); inp.placeholder='ほかの名前'; inp.value=st.other||''; inp.oninput=()=>{ st.other=inp.value; st.boss=inp.value.trim(); br.querySelectorAll('button').forEach(x=>x.classList.remove('on')); }; br.append(inp); b.append(br);
+  const ok=h('button','dcok',st.saving?'決めています…':'決める'); ok.type='button'; ok.dataset.act='dcok'; ok.dataset.dk=o.k; ok.disabled=!!st.saving; b.append(ok);
+  return b; }
+// 第49.9版（10/15 社長の決定・全体設計「私の仕事からLINEへ返事を送る」）：LINEで返事。送る仕組み（記録係の側・LINEの会話が作る）ができるまでは出さない（SHOW_LINE_REPLY）
+//  送り先のグループ・メンションする人（最初は発言した人）・文・送る前の見本（頭に押した人の名前）を1画面で。「送る」を押したときだけ送る
+const SHOW_LINE_REPLY=!!D.lineReply;   // 10/16 社長の決定：LINEで返事（記録係 第21版とつないだ）。出す人は本体が決める（LINEで返事.js LINE_REPLY_USERS_）
+const lineOf=o=>{ const m=String(o.key||'').match(/^(?:line|wait)\|([^|]+)\|([^|]+)\|([^|]+)/); if(!m||/自分専用|個別トーク/.test(m[1])) return null; return {g:m[1],at:m[2],who:m[3]}; };
+// 10/16：1段目で文を書き、2段目の確かめの画面で「送る」を押したときだけ送る。送り先・人数・今月の残り・メンションされる人は本体が記録係の表から読む（lineReplyInfo）
+function replySheet(o){ const L=lineOf(o); if(!L) return; const s=sheet('LINEで返事',''), st={text:'',info:null,step:1}, rid=Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+  const box=h('div','n-dc'); box.style.padding='4px 16px 8px'; s.append(box);
+  const line=(k,v)=>{ const r=h('div'); const a=h('div','dl',k), b=h('div',null,v); b.style.cssText='font-size:15.5px;font-weight:700;color:var(--ink);margin-top:2px'; r.append(a,b); return r; };   // 確かめ役：項目名は小さく、中身ははっきり
+  const pvText=()=>(st.info&&st.info.canMention?'@'+st.info.who+(st.info.honor?' '+st.info.honor:'')+'\n':'')+((st.info&&st.info.from)||dispName(window.__NAME))+'より：\n'+(st.text||'（文）');   // 記録係が届ける形（10/17 18:38 受け口の新しい版）：@宛名 様（改行）◯◯より：（改行）本文
+  const qtLine=()=>{ const I=st.info; if(!(I&&I.quote&&I.src)) return null; const q=h('div','k','LINEでは、元の発言（'+I.who+(I.honor?' '+I.honor:'')+'：「'+I.src+'」）が引用の形で付きます。'); q.style.cssText='font-size:13px;color:var(--sub);margin-top:2px'; return q; };   // 10/16 確かめ役：囲みの中はお客様に届く文だけにする
+  const paint=()=>{ box.textContent=''; const I=st.info;
+    if(!I){ box.append(h('div','k','送り先を確かめています…')); return; }
+    if(I.err){ box.append(h('div','k','この件はLINEで返事できません（'+I.err+'）')); return; }
+    if(I.stopped||st.stopped){   // 10/16 確かめ役：記録係を止めている間は、送れていないことを一番上に。送ります・通数・直すは出さない
+      const t=h('div','t',st.stopped?'送っていません':'いまはLINEへ送れません'); t.style.cssText='color:var(--hot);font-size:17px;font-weight:700;padding:8px 0 4px'; box.append(t,h('div','k','自分のLINEで送ってください'));
+      if(st.text.trim()){ const pv=h('div','tx'); pv.style.cssText='white-space:pre-wrap;font-size:14px;background:var(--fold);border-radius:8px;padding:10px;margin:8px 0;border:1.5px solid var(--sub)'; pv.textContent=st.text; box.append(pv);
+        const cp=h('button','dcok','文を写す'); cp.type='button'; cp.onclick=()=>{ const old=()=>{ const t=document.createElement('textarea'); t.value=st.text; t.style.cssText='position:fixed;opacity:0'; document.body.append(t); t.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(e){} t.remove(); cp.textContent=ok?'写しました':'写せませんでした'; }; try{ navigator.clipboard.writeText(st.text).then(()=>{ cp.textContent='写しました'; }).catch(old); }catch(e){ old(); } }; box.append(cp); }
+      return; }
+    const use=I.members!=null?'グループの'+I.members+'人に届くので、LINEの送れる数を'+I.members+'通':'グループの人数分、LINEの送れる数を', left=I.left!=null?'（今月の残り '+I.left+'通）':'';
+    if(st.step===1){
+      box.append(line('送り先（'+(I.kind||'グループ')+'）',I.group+(I.members!=null?'（'+I.members+'人）':'')),line('宛名',I.canMention?I.who+(I.honor?' '+I.honor:'')+'（元の発言の人）':'なし'));
+      const ta=h('textarea'); ta.rows=4; ta.placeholder='返事の文'; ta.value=st.text; ta.style.cssText='font:inherit;font-size:16px;width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink)'; box.append(ta);
+      const pv=h('div','tx'); pv.style.cssText='white-space:pre-wrap;font-size:14px;background:var(--fold);border-radius:8px;padding:10px;border:1.5px solid var(--sub)'; pv.textContent=pvText(); ta.oninput=()=>{ st.text=ta.value; pv.textContent=pvText(); }; box.append(h('div','dl','送る前の見本（この囲みの中がそのまま届きます）'),pv); { const q=qtLine(); if(q) box.append(q); }
+      box.append(h('div','k',use+'使います'+left));
+      const nx=h('button','dcok','確かめる'); nx.type='button'; nx.onclick=()=>{ if(!st.text.trim()){ ta.focus(); return; } st.step=2; paint(); }; box.append(nx); setTimeout(()=>ta.focus(),50); return; }
+    // 2段目：確かめの画面
+    box.append(h('div','t','この文を'+(I.kind||'')+'「'+I.group+'」に送ります。グループに入っている'+(I.members!=null?I.members+'人全員':'全員')+'が読みます（社内の人も含みます）。'));
+    const pv=h('div','tx'); pv.style.cssText='white-space:pre-wrap;font-size:14px;background:var(--fold);border-radius:8px;padding:10px;margin:8px 0;border:1.5px solid var(--sub)'; pv.textContent=pvText(); box.append(h('div','dl','この囲みの中がそのまま届きます'),pv); { const q=qtLine(); if(q) box.append(q); }
+    box.append(h('div','k',use+'使います'+left));
+    const msg=h('div','k'); const go=h('button','dcok','送る'); go.type='button'; const back=h('button',null,'直す'); back.type='button'; back.onclick=()=>{ st.step=1; paint(); };
+    go.onclick=()=>{ go.disabled=true; back.disabled=true; go.textContent='送っています…';
+      gs('sendLineReply',o.key,st.text,rid).then(r=>{ const md=(new Date().getMonth()+1)+'/'+new Date().getDate();
+        if(r&&(r.ok||r.later)){ o.it.replied=md; closeSheet(); renderAll(); toast(r.ok?md+' LINEで返事しました':'LINEで返事を受け付けました（15分以内に送ります）'); return; }
+        if(r&&r.stopped){ st.stopped=true; paint(); return; }
+        go.disabled=false; back.disabled=false; go.textContent='送る'; msg.textContent='送れませんでした（'+((r&&r.text)||'理由が分かりません')+'）'; })
+      .catch(e=>{ go.disabled=false; back.disabled=false; go.textContent='送る'; msg.textContent='送れませんでした（'+niceErr(e)+'）'; }); };
+    const ac=h('div'); ac.style.cssText='display:flex;gap:12px;align-items:center'; back.style.cssText='font:inherit;font-size:14px;min-height:36px;padding:0 16px;border-radius:18px;background:transparent;border:1.5px solid var(--sub);color:var(--ink)'; ac.append(go,back); box.append(ac,msg); };   // 10/16 確かめ役：「送る」だけを色付きで目立たせる
+  paint(); act(s,'やめる',null,closeSheet);
+  gs('lineReplyInfo',o.key).then(I=>{ st.info=I||{err:'読めませんでした'}; paint(); }).catch(e=>{ st.info={err:niceErr(e)}; paint(); }); }
+// 第50.0版：②とペライチのずれ。どちらが正しいかを人が選ぶ（押した方の表だけ書く）
+function syncBox(o){ const st=OPEN[o.k]||{}, b=h('div','n-dc'), r=h('div','dr'); if(o.it.detail) b.append(h('div','k',o.it.detail)); r.append(h('div','dl','どちらが正しいですか'));
+  [['②','②に合わせる'],['ペライチ','ペライチに合わせる']].forEach(([v,l])=>{ const x=h('button',null,st.saving===v?'書いています…':l); x.type='button'; x.dataset.act='sync'; x.dataset.v=v; x.disabled=!!st.saving; r.append(x); }); b.append(r); return b; }
+// 第50.3版：番号の無い案件に②の候補。選んだときだけ表「案件」の管理番号に書く（②は書かない）
+function numBox(o){ const st=OPEN[o.k]||{}, b=h('div','n-dc'), C=o.it.cands||[];
+  C.forEach(c=>{ const r=h('div','dr'); r.append(h('div','dl',(c.no||'番号なし')+'　'+c.name+'（②の段階：'+c.st+(c.men?'・面談 '+c.men:'')+(c.inq?'・問い合わせ '+c.inq:'')+'）')); if(c.ref) r.append(h('div','k','参考：前の工事（'+c.no+'）のOBさん')); if(c.no&&c.pick!==false&&!c.ref){ const x=h('button',null,st.saving===c.no?'書いています…':'この番号にする'); x.type='button'; x.dataset.act='num'; x.dataset.v=c.no; x.disabled=!!st.saving; r.append(x); } b.append(r); });
+  const r0=h('div','dr'), n0=h('button',null,'どれでもない'); n0.type='button'; n0.dataset.act='num'; n0.dataset.v=''; n0.disabled=!!st.saving; r0.append(n0); b.append(r0); return b; }
+// 第50.6版：LINEの依頼で②に入れた件（違えば元に戻す）・候補（入れる／入れない）
+function l2Box(o){ const st=OPEN[o.k]||{}, b=h('div','n-dc'), r=h('div','dr'); if(o.it.detail) b.append(h('div','k',o.it.detail));
+  (o.it.kind==='l2'?[['undo','違うので元に戻す']]:[['set','入れる'],['skip','入れない']]).forEach(([v,l])=>{ const x=h('button',null,st.saving===v?'書いています…':l); x.type='button'; x.dataset.act='l2'; x.dataset.v=v; x.disabled=!!st.saving; r.append(x); }); b.append(r); return b; }
+// AI相談：やり取りは件ごとに残す（画面を描き直しても消えない）
+const TALK={};
+function talkPanel(o){ let T=TALK[o.k]; if(!T){ const it=o.it, w=secOf(o)==='wait';
+    const ctx='件：'+(it.title||'')+'\n'+(w?'状況：社長が '+(it.who||'相手')+' に頼んでいて、まだ報告が来ていない（'+(it.since||'')+'）':'事実：'+(it.detail||''))+'\n出どころ：'+(Array.isArray(it.src)?it.src:[]).map(s=>s&&s.label).join('、');
+    const p=h('div','panel show'); const ans=h('div','ans'); ans.hidden=true; p.append(ans); const cp=h('button','copy','最後の答えをコピー'); cp.type='button'; cp.hidden=true; p.append(cp);
+    const ask=h('div','ask talk'); const inp=h('textarea'); inp.rows=4; inp.placeholder='AIに相談する'; const gob=h('button',null,'送る'); gob.type='button'; ask.append(inp,gob); p.append(ask);
+    T=TALK[o.k]={key:o.key, ctx:ctx+'\n元の発言・中身：\n'+String(it.body||'').slice(0,1500), judge:!!it.judge, ans, cp, inp, go:gob, turns:[], log:[], el:p};
+    gob.addEventListener('click',()=>runTalk(T)); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)&&!e.isComposing){ e.preventDefault(); runTalk(T); } });
+    cp.addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(T.last||''); cp.textContent='コピーしました'; }catch(e){ cp.textContent='コピーできませんでした（長押しで選んでください）'; } setTimeout(()=>cp.textContent='最後の答えをコピー',2500); }); }
+  return T.el; }
+function giveOf(o){ const p=h('div','n-gv'); p.append(h('div','k','誰に？'));
+  const chips=h('div','chips'); (D.people||[]).forEach(x=>{ const b=h('button','chip',x.name); b.type='button'; b.onclick=()=>delegate(o,x.email,x.name,''); chips.append(b); });
+  const ext=h('button','chip ext','社外の人'); ext.type='button'; chips.append(ext); p.append(chips);
+  const ask=h('div','ask donebox'); ask.style.display='none'; const inp=h('input'); inp.placeholder='誰に・何を'; const gob=h('button','doneok2','任せる'); gob.type='button'; ask.append(inp,gob); p.append(ask);
+  ext.onclick=()=>{ ask.style.display=''; inp.focus(); }; const goExt=()=>{ const v=inp.value.trim(); if(!v){ inp.focus(); return; } delegate(o,'','',v); };
+  gob.addEventListener('click',goExt); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing) goExt(); }); return p; }
+// 第49.5版（モグラたたきの決まり①・10/15 社長）：いま動くこと。いま叩く1つを大きく、残りは「次に待っているもの ◯件 ›」。理由は押さなくても題の下に小さく（押すと全文）
+const whyOf=sp=>{ let w=String(sp.why||'').trim(); if(!w){ const o=sp.os[0], d=String((o&&o.it.detail)||''), m=d.match(/(?:^|\n)なぜ[：:]\s*(.+)/), du=o&&dueOf(o); w=m?m[1]:du&&du.text?'期限は'+String(du.text).replace(/^期限[：:]/,'')+'です。':''; }
+  const bk=sp.os.map(o=>LBACK[o.key]).filter(Boolean)[0], pre=bk&&!/あとでにした件/.test(w)?bk.md+'にあとでにした件です'+(bk.n>=3?'（'+bk.n+'回目）':'')+'。'+(bk.why&&bk.why!=='完了になった'?bk.why+'。':''):'';
+  return !w?(pre?'なぜなら：'+pre:''):(/^なぜなら[：:]/.test(w)?w.replace(/^なぜなら[：:]/,'なぜなら：'+pre):'なぜなら：'+pre+w); };
+let NOWHY_SENT=false;
+// 10/17 統括の決定・社長の決定（第52.3版）：件が2つ以上の項目（sp.g）は、見出しに「残り◯組・いちばん古い日から」。開くと古い順に1つずつ「送った」／「完了」（工程表の未着手と同じ部品 gkList）。見出しの完了は出さない
+const plOld=sp=>{ let o0=null; sp.os.forEach(o=>{ if(o.it.from0&&(!o0||o.it.from0<o0.it.from0)) o0=o; }); return o0?o0.it.from0s+'から':''; };
+const pKey=sp=>sp.g?'pg|'+sp.g.t:'p'+sp.n;   /* まとめた項目は題で覚える（ほかの項目が済んで番号がずれても、開いたまま） */
+const plBorn=sp=>{ let o0=null; sp.os.forEach(o=>{ if(o.it.born&&(!o0||o.it.born<o0.it.born)) o0=o; }); return o0?bornTx(o0.it):''; };
+function plOne(sp,big){ const st=OPEN[pKey(sp)]||{}, c=h('div','n-pl'+(big?' big':'')+(st.det?' open':'')), wy=whyOf(sp); c.dataset.p=sp.n;
+  const r=h('div','row'), bd=h('div','bd'); bd.dataset.pact='det'; bd.append(h('div','t',sp.g?sp.g.t:sp.t));
+  if(sp.g){ c.dataset.g=sp.os.length; bd.append(h('div','cnt',['残り'+sp.os.length+sp.g.unit,plOld(sp)].filter(Boolean).join('・'))); } else { const bn=plBorn(sp); if(bn) bd.append(h('div','bn',bn)); }
+  if(wy) bd.append(h('div','why',wy)); if(!big) r.append(h('div','no',String(sp.n))); r.append(bd);
+  const ac=h('div','ac'), dn=h('button','dn','完了'), lt=h('button','lt','あとで'); dn.type=lt.type='button'; dn.dataset.pact='done'; lt.dataset.pact='later'; if(!sp.g) ac.append(dn); ac.append(lt); r.append(ac); c.append(r);
+  if(st.det){ const w=h('div','n-plw'); if(sp.g){ const R=(sp.all||sp.os).filter(o=>sp.os.indexOf(o)>=0||GCHK.has(o.k)&&isDone(o)); w.append(gkList([{h:'',os:R.filter(o=>!isDone(o)).concat(R.filter(isDone))}])); } else sp.os.forEach(o=>w.append(rowOf(o,true))); if(SHOW_FIRST&&!big){ const fb=h('button','n-first','これを先に'); fb.type='button'; fb.dataset.pact='first'; w.append(fb); } c.append(w); }
+  return c; }
+// 第49.6版（統括の点検表3）：止まっている案件・止まっている仕事・監督の欄の知らせも、いま動くことと同じ形（題と「なぜなら：」）で並べる。押すと案件のページ／中身
+const ALW={stop:'なぜなら：工事が進んでいる案件でグループの発言が止まると、お客様や職人さんが待っていることに気づけないからです。',hand:'なぜなら：お客様リストの監督の欄が中島さんのままだと、みんなが監督を取り違えるからです。',stuck:'なぜなら：受け持ちが決まっていない段階の仕事や、次の段階に入ったのに残っている仕事は、だれも動かないまま止まるからです。'};
+function alertSteps(){ const A=(D.letterNews||[]).map(n=>({al:1,t:n.text,why:'なぜなら：次にお客様と話すとき、資料と手紙が届いている前提で話せるからです。'})).concat(D.inq&&D.inq.text?[{al:1,t:D.inq.text,why:'なぜなら：お問い合わせのお客様を、お待たせしないためです。',url:D.inq.url||''}]:[]).concat((D.alerts||[]).map(a=>({al:1,t:a.text,why:/監督の欄/.test(a.text)?ALW.hand:ALW.stop,caseKey:a.caseKey}))); const NO=D.noOne||[]; if(NO.length) A.push({al:1,t:'止まっている仕事 '+NO.length+'件',why:ALW.stuck,list:NO});
+  const NB=D.noBoss||[]; if(NB.length){ const nc=new Set(NB.map(x=>x.ck||x.c||x.t)).size; A.push({al:1,t:'監督が決まっていない案件 '+nc+'件（作業 '+NB.length+'件）',why:'監督を決めてください。お客様リストの「商談中」の表の「監督」の欄に名前を入れると、作業がその人に移ります。',list:NB.map(x=>({c:x.c,t:x.t,who:''})),link:{t:'お客様リスト（商談中）を開く',url:'https://docs.google.com/spreadsheets/d/1f6wMS1KLvN_ZbHXAgdYq3tGtPv2qlY452WZgyQ8BB0c/edit#gid=445762483'}}); }   // 10/16 社長の決定（確かめ役：何の数か・何をすればいいかを書く。行の右の「担当まだ」は見出しと同じなので出さない）
+  return A; }
+function alOne(a,i,big){ const st=OPEN['al'+i]||{}, c=h('div','n-pl al'+(big?' big':'')+(st.det?' open':'')), r=h('div','row'), bd=h('div','bd'); c.dataset.al=i;
+  bd.append(h('div','t',a.t+(a.list||a.url||a.caseKey?' ›':'')),h('div','why',a.why)); r.append(bd); c.append(r);
+  bd.onclick=()=>{ if(a.list){ OPEN['al'+i]={det:!st.det}; paintPlan(); } else if(a.url){ window.open(a.url,'_blank'); } else if(a.caseKey) openCase(a.caseKey); };
+  if(a.list&&st.det){ const L=h('div','n-plw'); if(a.link){ const lk=h('a',null,a.link.t+' ›'); lk.href=a.link.url; lk.target='_blank'; lk.style.cssText='display:inline-block;margin:2px 0 8px;font-size:14px;font-weight:700;color:var(--link)'; L.append(lk); } a.list.forEach(x=>{ const rr=h('div','cp-j'); rr.append(h('span','v',x.c?x.c+'：'+x.t:x.t)); if(x.who) rr.append(h('span','w',jobWho(x.who==='未定'?'まだ決めていない':x.who))); L.append(rr); }); c.append(L); }
+  return c; }
+// 10/17 会社の大事なこと：上から3件（並びはサーバー）。4件目からは「ほか◯件」。押すと中身。自分の件なら完了もここで。社長だけ「外す」
+const djHeld=r=>{ const H=[]; (r.mine||[]).forEach(k=>{ const o=IT.find(x=>x.key===k); if(o) H.push(o); }); return H; };
+const djOpenHeld=r=>{ const H=[]; djHeld(r).forEach(o=>{ if(!isDone(o)) H.push(o); }); return H; };   /* 開いた中に出す自分の件は、まだの件だけ（完了にした件に完了ボタンをもう一度出さない） */
+const djLive=()=>{ const L=[]; DJ.forEach(r=>{ if(DJX[r.id]==='done') delete DJX[r.id]; if(DJX[r.id]) return; if(r.closer&&djHeld(r).some(isDone)){ DJX[r.id]='done'; return; } L.push(r); }); return L; };   /* 自分の完了で消える行は、すぐこの画面から外す（完了を元に戻したら、また出す） */
+function djOne(r){ const st=OPEN['dj'+r.id]||{}, c=h('div','n-pl n-dj'+(st.det?' open':'')), rw=h('div','row'), bd=h('div','bd'); c.dataset.dj=r.id;
+  bd.dataset.djact='det'; bd.append(h('div','t',r.t)); if(r.who) bd.append(h('div','who',r.who)); { const bn=bornTx(r.it); if(bn) bd.append(h('div','bn',bn)); } rw.append(bd);
+  if(D.daiji&&D.daiji.owner){ const ac=h('div','ac'), b=h('button','lt','外す'); b.type='button'; b.dataset.djact='out'; ac.append(b); rw.append(ac); }
+  c.append(rw);
+  if(st.det){ const H=djOpenHeld(r); if(H.length){ const w=h('div','n-plw'); H.forEach(o=>w.append(rowOf(o,true))); c.append(w); }
+    else { const w=h('div','n-djd'); if(r.it.detail) w.append(h('div','k',r.it.detail)); w.append(more(r.it.body,r.it.src)); c.append(w); } }
+  return c; }
+const DJB=h('div','n-djb');
+// 10/17 社長の決定（統括経由）：済んだかもの件を、最初の画面の1行「もう終わっている件に、完了を押してください」でまとめて完了に（外してよさそうな件と同じ形・同じ動き。元に戻すも）
+const SMB=h('div','n-smb');
+function paintSumi(){ SMB.textContent=''; const L=SUMI; SMB.hidden=!L.length||S.view!=='mine'; if(!L.length) return;
+  const cb=h('button','n-wl n-cand n-sumi'+(S.sumi?' open':'')); cb.type='button'; cb.append(h('span','tx','もう終わっている件に、完了を押してください（済んだかも '+L.length+'件）'),h('span','ar',S.sumi?'閉じる':'›')); cb.onclick=()=>{ S.sumi=!S.sumi; paintSumi(); check(); }; SMB.append(cb);
+  if(!S.sumi) return; const w=h('div','n-sumiw'), dn=[]; L.forEach(o=>{ if(!SSEL[o.k]) dn.push(o); });
+  const goBox=()=>{ const ft=h('div','n-cgo'), gb=h('button','dcok',dn.length?'完了（'+dn.length+'件）':'残す（'+L.length+'件）'); gb.type='button'; gb.onclick=()=>sumiGo(L.slice()); ft.append(gb); return ft; };
+  w.append(goBox()); L.forEach(o=>w.append(rowOf(o,true))); if(L.length>3) w.append(goBox()); SMB.append(w); }
+SMB.addEventListener('click',onRow);
+const SUMI_MEMO='まとめて完了（済んだかも）', smC=o=>!!(o.it.cand&&o.it.cand.m==='済んだかも');   /* 外してよさそうな件の「済んだかも」の印の件（サーバーで saveCand と同じに書く） */
+function sumiGo(L){ const dn=[], kp=[]; L.forEach(o=>{ if(SSEL[o.k]) kp.push(o); else dn.push(o); });
+  dn.forEach(o=>{ DONE[o.k]=Object.assign(doneRec(o),{memo:SUMI_MEMO}); delete OPEN[o.k]; if(smC(o)) CANDX[o.k]='out'; }); kp.forEach(o=>{ SUMX[o.k]='keep'; delete SSEL[o.k]; if(smC(o)) CANDX[o.k]='keep'; });
+  S.sumi=false; renderAll();
+  gs('saveSumi',dn.map(o=>o.key),kp.map(o=>o.key)).then(r=>{ okErr(); const ks=r&&r.undo?r.undo:null;
+      toast((dn.length?'完了にしました '+dn.length+'件'+(kp.length?'・残した '+kp.length+'件':''):'残しました '+kp.length+'件'),[['元に戻す',()=>{ sumiUndo(dn,kp,ks); return true; }]],null,true); })
+    .catch(e=>{ dn.forEach(o=>{ delete DONE[o.k]; delete CANDX[o.k]; }); kp.forEach(o=>{ delete SUMX[o.k]; delete CANDX[o.k]; SSEL[o.k]=true; }); S.sumi=true; renderAll(); relErr('※完了にできませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+function sumiUndo(dn,kp,ks){ dn.forEach(o=>{ delete DONE[o.k]; delete CANDX[o.k]; }); kp.forEach(o=>{ delete SUMX[o.k]; delete CANDX[o.k]; }); renderAll();
+  gs('undoSumi',ks||(()=>{ const u={c:[],d:[],k:[]}; dn.forEach(o=>(smC(o)?u.c:u.d).push(o.key)); kp.forEach(o=>(smC(o)?u.c:u.k).push(o.key)); return u; })()).then(r=>{ okErr(); warm(); const n=r&&typeof r.back==='number'?r.back:dn.length+kp.length; toast(n?'元に戻しました '+n+'件':'戻す件はありませんでした'); })
+    .catch(e=>{ dn.forEach(o=>{ DONE[o.k]=Object.assign(doneRec(o),{memo:SUMI_MEMO}); if(smC(o)) CANDX[o.k]='out'; }); kp.forEach(o=>{ SUMX[o.k]='keep'; if(smC(o)) CANDX[o.k]='keep'; }); renderAll(); relErr('※元に戻せませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+function paintDaiji(){ DJB.textContent=''; const L=djLive(); DJB.hidden=!L.length||S.view!=='mine'; if(!L.length) return;
+  const hd=h('div','n-plh'); hd.append(h('b',null,'会社の大事なこと')); DJB.append(hd);
+  L.slice(0,DJSHOW).forEach(r=>DJB.append(djOne(r)));
+  if(L.length>DJSHOW){ const mb=h('button','n-wl n-djm'+(S.djMore?' open':'')); mb.type='button'; mb.append(h('span','tx','ほか '+(L.length-DJSHOW)+'件'),h('span','ar',S.djMore?'閉じる':'›')); mb.onclick=()=>{ S.djMore=!S.djMore; paintDaiji(); check(); }; DJB.append(mb);
+    if(S.djMore) L.slice(DJSHOW).forEach(r=>DJB.append(djOne(r))); } }
+DJB.addEventListener('click',onRow);
+DJB.addEventListener('click',e=>{ const a=e.target.closest('[data-djact]'); if(!a) return; const c=a.closest('.n-dj'); if(!c||a.closest('.n-plw,.n-djd')) return; const id=c.dataset.dj, r=DJON[id]; if(!r) return;
+  if(a.dataset.djact==='det'){ const st=OPEN['dj'+id]=OPEN['dj'+id]||{}; st.det=!st.det; paintDaiji(); return; }
+  if(a.dataset.djact==='out'){ DJX[id]='out'; renderMine();
+    gs('saveDaiji',id,'out').then(()=>{ warm(); toast('外しました：'+r.t,[['元に戻す',()=>{ delete DJX[id]; renderMine(); gs('saveDaiji',id,'back').then(()=>warm()).catch(e2=>{ DJX[id]='out'; renderMine(); relErr('※元に戻せませんでした（'+niceErr(e2)+'）'); }); return true; }]]); })
+      .catch(e2=>{ delete DJX[id]; renderMine(); relErr('※外せませんでした。もう一度押してください（'+niceErr(e2)+'）'); }); } });
+function paintPlan(){ PLB.textContent=''; const PL=planNow(), AL=alertSteps(); if(!PL.length&&!AL.length) return;
+  const nw=PL.filter(sp=>!whyOf(sp)).length; if(nw&&!NOWHY_SENT){ NOWHY_SENT=true; try{ gs('logClientError','いま動くことの理由が空：'+nw+'件').catch(()=>{}); }catch(e){} }
+  const td=new Date().toDateString(), nd=Object.values(DONE).filter(r=>r&&r.doneAt&&new Date(r.doneAt).toDateString()===td).length;
+  const hd=h('div','n-plh'); hd.append(h('b',null,'いま動くこと'),h('span',null,nd?'今日 '+nd+'件済':'')); PLB.append(hd,PL.length?plOne(PL[0],true):alOne(AL[0],0,true));
+  const nW=PL.length+AL.length-1;
+  if(nW){ const rb=h('button','n-wl n-rest'+(S.rest?' open':'')); rb.type='button'; rb.append(h('span','tx','次に待っているもの '+nW+'件'),h('span','ar',S.rest?'閉じる':'›')); rb.onclick=()=>{ S.rest=!S.rest; paintPlan(); }; PLB.append(rb);
+    if(S.rest){ const rw=h('div','n-restw'); PL.slice(1).forEach(sp=>rw.append(plOne(sp,false))); AL.forEach((a,i)=>{ if(PL.length||i) rw.append(alOne(a,i,false)); }); PLB.append(rw); } } }
+function paintList(){ const t=curTab(); const G=groups(t,S.mode); let g=G.find(x=>x.k===S.sub); if(!g){ g=G[0]; S.sub=g.k; }
+  paintHead(t); paintSub(G,g.k); LS_.textContent=''; paintDaiji(); paintSumi(); paintPlan();
+  const showCase=t.k==='all'||t.k==='other';
+  const F=g.stale?foldOf(t):[];
+  const C=g.wait?[]:t.cand;   /* 10/17：外してよさそうな件（対応・懸念のどちらでも、案件のタブの件だけ）。任せた件の1行より上 */
+  if(C.length){ const cb=h('button','n-wl n-cand'+(S.cand?' open':'')); cb.type='button'; cb.append(h('span','tx','外してよさそうな件 '+C.length+'件'),h('span','ar',S.cand?'閉じる':'›')); cb.onclick=()=>{ S.cand=!S.cand; paintList(); }; LS_.append(cb);
+    if(S.cand){ const cw=h('div','n-candw'), out=C.filter(o=>!CSEL[o.k]), sumi=out.some(o=>o.it.cand.m==='済んだかも');
+      const goBox=()=>{ const ft=h('div','n-cgo'); if(sumi) ft.append(h('div','k','外すと、この中の「済んだかも」は完了になります')); const gb=h('button','dcok',out.length?'外す（'+out.length+'件）':'残す（'+C.length+'件）'); gb.type='button'; gb.onclick=()=>candGo(C); ft.append(gb); return ft; };   /* 10/17 統括：上（1行のすぐ下）と下の2か所。どちらも同じ動き・同じ数 */
+      cw.append(goBox()); C.forEach(o=>cw.append(rowOf(o,showCase))); if(C.length>3) cw.append(goBox()); LS_.append(cw); } }   /* 3件までは1画面に収まるので、上の1つだけ（2つ並ぶと迷う） */
+  if(F.length){ const nr=F.filter(o=>bucket(o)==='reply').length, ns=F.length-nr, fb=h('button','n-wl'+(S.fold?' open':'')); fb.type='button';
+    fb.append(h('span','tx','任せた件　'+[nr?'済んだかも '+nr:'',ns?'返事なし '+ns:''].filter(Boolean).join('・')),h('span','ar',S.fold?'閉じる':'›'));
+    fb.onclick=()=>{ S.fold=!S.fold; paintList(); }; LS_.append(fb);
+    if(S.fold){ const fw=h('div','n-wlw'); F.forEach(o=>fw.append(rowOf(o,showCase))); LS_.append(fw); } }
+  const ktEl=g.kt?ktCard():null, ktAt=!ktEl?-1:ktEl.classList.contains('hot')?0:(i=>i<0?g.items.length:i)(g.items.findIndex(o=>!(isHot(o)||isOver(o))));   /* 10/17 第52.3版：工程表の1件は、急ぎの件のすぐ下（期限が近い・過ぎた項目があればいちばん上） */
+  if(!g.items.length&&!F.length&&!C.length&&!(g.old||[]).length&&!ktEl) LS_.append(h('div','n-none','なし'));
+  g.items.forEach((o,i)=>{ if(i===ktAt) LS_.append(ktEl); LS_.append(rowOf(o,showCase)); }); if(ktEl&&ktAt>=g.items.length) LS_.append(ktEl);
+  // 第49.5版（D1）：前の件（消さない。押すと開く）
+  const OL=g.old||[]; if(OL.length){ const ob=h('button','n-wl n-old'+(S.old?' open':'')); ob.type='button'; const otx=h('span','tx','しばらく動きのない件 '+OL.length+'件'); otx.style.cssText='font-weight:700;color:var(--ink);font-size:15px'; ob.append(otx,h('span','ar',S.old?'閉じる':'›')); ob.onclick=()=>{ S.old=!S.old; paintList(); }; LS_.append(ob);
+    if(S.old){ const ow=h('div','n-oldw'); const hint=h('div',null,'済んでいたら「完了」を押してください。'); hint.style.cssText='padding:8px 16px;font-size:13.5px;color:var(--sub)'; ow.append(hint); OL.forEach(o=>ow.append(rowOf(o,showCase))); LS_.append(ow); } }
+  saveState(); }
+const foldOf=t=>t.waits.filter(o=>{ const b=bucket(o); return b==='reply'||b==='stale'; });
+// ── 10/17 第52.3版：まとめた件の部品（工程表の未着手・いま動くことの2件以上の項目。同じ形・同じ動き）。1行＝短い題と右の1つのボタン。押すと済、もう一度押すと元に戻す ──
+const gkLabel=o=>o.it.kind==='letter'?'送った':o.it.kind==='stage'?'済':'完了';
+const gkText=o=>o.it.kind==='letter'?String(o.it.title||'').replace(/に資料と手紙を送る.*$/,''):String(o.it.title||'');
+const gkSub=o=>{ const d=dueOf(o), dt=d&&d.text&&(d.level==='hot'||d.level==='soon'||isOver(o)||o.it.dueSoon)?String(d.text).replace(/^期限[：:]/,''):''; return [dt,o.it.kind==='letter'?[o.it.area,String(o.it.bld||'').replace(/(^|・)未定(?=・|$)/g,'')].join('・').replace(/^[・\s]+|[・\s]+$/g,''):''].filter(Boolean).join('・'); };
+function gkRow(o){ const dn=isDone(o), r=h('div','n-gk'+(dn?' on':'')+(!dn&&(isHot(o)||isOver(o))?' hot':'')); r.dataset.gk=o.k; const bd=h('div','bd'); bd.append(h('div','t',gkText(o)));
+  const m=h('div','m'), bn=bornTx(o.it), sb=gkSub(o); if(bn) m.append(h('span','bn',bn)); if(sb){ if(bn) m.append(document.createTextNode('・')); m.append(document.createTextNode(sb)); } if(m.childNodes.length) bd.append(m);
+  const b=h('button','gkb'+(dn?' on':''),dn?'✓'+gkLabel(o):gkLabel(o)); b.type='button'; b.dataset.act='gck'; r.append(bd,b); return r; }
+function gkList(secs){ const w=h('div','n-gkw'); secs.forEach(s=>{ if(s.h) w.append(h('div','n-gh',s.h)); s.os.forEach(o=>w.append(gkRow(o))); }); return w; }
+function onGk(e){ const a=e.target.closest('[data-act="gck"]'); if(!a) return; const r=a.closest('.n-gk'), o=r&&BYK[r.dataset.gk]; if(!o) return;
+  if(isDone(o)){ GCHK.delete(o.k); undo(o.k); toast('元に戻しました：'+(o.it.kind==='stage'?ktName(o)+' ':'')+gkText(o)); return; }
+  const go=()=>{ GCHK.add(o.k); save(o.k,doneRec(o)); toast((o.it.kind==='letter'?'送りました：':o.it.kind==='stage'?'済にしました：'+ktName(o)+' ':'完了にしました：')+gkText(o),[['元に戻す',()=>{ GCHK.delete(o.k); undo(o.k); return true; }]]); };
+  if(o.it.kind==='letter'){ a.disabled=true; a.textContent='…'; gs('saveLetter',o.key).then(go).catch(err=>{ a.disabled=false; a.textContent=gkLabel(o); relErr('※お客様リストに書けませんでした。もう一度押してください（'+niceErr(err)+'）'); }); } else go(); }
+// 工程表の未着手：案件ごとの見出しの下にチェック項目。期限が近い・過ぎた項目があるときだけ、見出しに1つ（いちばん急ぐもの）
+const ktOrd=(a,b)=>((CASEORD.indexOf(ktCk(a))+1)||999)-((CASEORD.indexOf(ktCk(b))+1)||999)||ktSt(a)-ktSt(b)||a.i-b.i;
+const ktName=o=>{ const k=ktCk(o); return CASEN[k]?caseLabel(k):shortCase(o.it.caseName||k.replace(/^case\|/,''))+'さま'; };
+const ktUrg=L=>{ const U=L.filter(o=>isOver(o)||isHot(o)||o.it.dueSoon||(dueOf(o)&&dueOf(o).level==='soon')); U.sort((a,b)=>(isOver(b)-isOver(a))||((b.it.overDays||0)-(a.it.overDays||0))||(isHot(b)-isHot(a))||((a.it.daysLeft==null?99:a.it.daysLeft)-(b.it.daysLeft==null?99:b.it.daysLeft))||a.i-b.i); return U[0]||null; };
+function ktCard(){ const L=KOTEI, st=OPEN.kt||{}, u=ktUrg(L), c=h('div','n-gp'+(u&&(isHot(u)||isOver(u))?' hot':'')+(st.det?' open':'')); c.dataset.gp='kt';
+  const r=h('div','row'), bd=h('div','bd'); bd.dataset.act='det'; bd.append(h('div','t','工程表の未着手 '+L.length+'件'));
+  if(u) bd.append(h('div','cnt',ktName(u)+'：'+(u.it.title||'')+' '+String((dueOf(u)||{}).text||'').replace(/^期限[：:]/,'')));
+  const ar=h('span','ar',st.det?'閉じる':'›'); ar.dataset.act='det'; r.append(bd,ar); c.append(r);
+  if(st.det){ const R=L.concat(IT.filter(o=>GCHK.has(o.k)&&isDone(o)&&o.it.kind==='stage')).sort(ktOrd), secs=[];
+    R.forEach(o=>{ const nm=ktName(o)+(STAGE_NM[ktSt(o)]?'・'+STAGE_NM[ktSt(o)]:''); let s0=secs.find(x=>x.h===nm); if(!s0){ s0={h:nm,os:[]}; secs.push(s0); } s0.os.push(o); });
+    secs.forEach(x=>{ x.os=x.os.filter(o=>!isDone(o)).concat(x.os.filter(isDone)); }); c.append(gkList(secs)); }
+  return c; }
+LS_.addEventListener('click',e=>{ const a=e.target.closest('[data-act="det"]'); if(!a) return; const c=a.closest('.n-gp'); if(!c||a.closest('.n-gkw')) return; const st=OPEN.kt=OPEN.kt||{}; st.det=!st.det; paintList(); check(); });
+LS_.addEventListener('click',onGk); PLB.addEventListener('click',onGk);
+function renderMine(){ TABS=model(); if(!TABS.some(t=>t.k===S.tab)) S.tab='all'; paintTabs(); paintList(); check(); }
+// タブを押したときだけ中身を切り替える（払っている間は変えない）。すっと消えて、ふわっと出る
+let busy=0; const RM=matchMedia('(prefers-reduced-motion: reduce)').matches, TABMS=[];
+function show(toTop){ const n=++busy, t0=performance.now(); const fin=()=>{ if(n!==busy) return; paintList();
+    const y0=FP.getBoundingClientRect().top+scrollY-(hdr.offsetHeight); if(toTop&&scrollY>y0) scrollTo(0,y0); else if(!toTop){ const ys=SB.offsetTop+FP.offsetTop-hdr.offsetHeight; if(scrollY>ys) scrollTo(0,ys); }
+    LS_.classList.remove('fade'); requestAnimationFrame(()=>{ TABMS.push(Math.round(performance.now()-t0)); if(TABMS.length>=5) sendTabMs(); }); };
+  if(RM){ fin(); return; } LS_.classList.add('fade'); setTimeout(fin,100); }
+function sendTabMs(){ if(!TABMS.length) return; const a=TABMS.splice(0); try{ gs('logTabMs',a).catch(()=>{}); }catch(e){} }
+TB.addEventListener('click',e=>{ const b=e.target.closest('button[data-k]'); if(!b||b.classList.contains('on')) return; S.tab=b.dataset.k; S.sub='';
+  TB.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); TB.scrollTo({left:Math.max(0,b.offsetLeft-TB.offsetLeft-84),behavior:RM?'auto':'smooth'}); show(true); });
+SB.addEventListener('click',e=>{ const b=e.target.closest('button[data-s]'); if(!b||b.classList.contains('on')) return; S.sub=b.dataset.s; show(false); });
+// 件の行の操作（画面の中の窓でも同じ）
+function onRow(e){ const c=e.target.closest('.n-cd'); if(!c) return; const o=BYK[c.dataset.k]; if(!o) return; const a=e.target.closest('[data-act]'); if(!a||!c.contains(a)) return; const act=a.dataset.act, st=OPEN[o.k]=OPEN[o.k]||{};
+  if(act==='det'){ if(e.target.closest('a')) return; st.det=!st.det; st.give=false; repaintRow(c,o); }
+  else if(act==='give'){ st.give=!st.give; st.det=false; repaintRow(c,o); }
+  else if(act==='ai'){ st.ai=!st.ai; repaintRow(c,o); if(st.ai) setTimeout(()=>{ const ta=TALK[o.k]&&TALK[o.k].inp; if(ta) ta.focus(); },60); }
+  else if(act==='move') moveSheet(o);
+  else if(act==='first') setFirst(o.key);
+  else if(act==='ckeep'){ CSEL[o.k]=!CSEL[o.k]; paintList(); }
+  else if(act==='skeep'){ SSEL[o.k]=!SSEL[o.k]; paintList(); }
+  else if(act==='l2'){ st.saving=a.dataset.v; repaintRow(c,o); gs('saveL2',o.key,a.dataset.v).then(r=>{ st.saving=''; finish(o,null); toast(r.wrote); }).catch(e=>{ st.saving=''; repaintRow(c,o); relErr('※書けませんでした（'+niceErr(e)+'）'); }); }
+  else if(act==='num'){ st.saving=a.dataset.v||'0'; repaintRow(c,o); gs('saveNum',o.key,a.dataset.v).then(r=>{ st.saving=''; finish(o,null); toast('書きました：'+r.wrote); }).catch(e=>{ st.saving=''; repaintRow(c,o); relErr('※書けませんでした（'+niceErr(e)+'）'); }); }
+  else if(act==='sync'){ st.saving=a.dataset.v; repaintRow(c,o); gs('saveSync',o.key,a.dataset.v).then(r=>{ st.saving=''; finish(o,null); toast('書きました：'+r.wrote); }).catch(e=>{ st.saving=''; repaintRow(c,o); relErr('※書けませんでした（'+niceErr(e)+'）'); }); }
+  else if(act==='reply') replySheet(o);
+  else if(act==='dc'){ const dob=BYK[a.dataset.dk]||o, ds=OPEN[dob.k]=OPEN[dob.k]||{}; ds[a.dataset.f]=a.dataset.v; if(a.dataset.f==='boss') ds.other=''; repaintRow(c,o); }
+  else if(act==='dcok'){ const dob=BYK[a.dataset.dk]||o, ds=OPEN[dob.k]=OPEN[dob.k]||{}; if(!ds.ord||!ds.boss){ toast(!ds.ord?'発注の形を選んでください':'監督を選ぶか、名前を書いてください'); return; } ds.saving=true; repaintRow(c,o);
+    gs('saveDecide',dob.key,ds.ord,ds.boss).then(r=>{ ds.saving=false; DEC[dob.key].order=r.order; DEC[dob.key].boss=r.boss; finish(dob,null); toast('お客様リストに書きました：発注の形 '+r.order+'・監督 '+r.boss); }).catch(e=>{ ds.saving=false; repaintRow(c,o); relErr('※決めた値を書けませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+  else if(act==='memo'){ st.memo=!st.memo; repaintRow(c,o); }
+  else if(act==='copy'){ const hd=HAND[o.key]; if(!hd) return; navigator.clipboard.writeText(hd.memo+(hd.intro?'\n\n'+hd.intro:'')).then(()=>{ st.copied=true; repaintRow(c,o); }).catch(()=>{ toast('写せませんでした（長押しで選んでください）'); }); }
+  else if(act==='redo'){ const hd=HAND[o.key]; if(!hd) return; st.redo=true; repaintRow(c,o); gs('handRedo',hd.ck).catch(e=>{ st.redo=false; repaintRow(c,o); relErr('※作り直せませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+  else if(act==='done'){ if(o.it.kind==='letter'&&!isDone(o)){ a.disabled=true; a.textContent='…'; gs('saveLetter',o.key).then(()=>finish(o,c)).catch(e=>{ a.disabled=false; a.textContent='完了'; relErr('※お客様リストに書けませんでした。もう一度押してください（'+niceErr(e)+'）'); }); } else finish(o,c); } }
+function repaintRow(c,o){ const t=curTab(); const n=rowOf(o,c.closest('.n-sheet')?true:(t.k==='all'||t.k==='other')); c.replaceWith(n); }
+LS_.addEventListener('click',onRow); PLB.addEventListener('click',onRow);
+const onPact=(e=>{ const a=e.target.closest('[data-pact]'); if(!a) return; const c=a.closest('.n-pl'); if(!c) return; const n=Number(c.dataset.p), sp=planNow().find(x=>x.n===n); if(!sp) return;
+  if(a.dataset.pact==='first'){ setFirst(sp.os[0].key); return; }
+  if(a.dataset.pact==='later'){ const ks=sp.os.map(o=>o.key), wy=whyOf(sp); ks.forEach(k=>LATER.add(k)); Object.keys(OPEN).forEach(x=>{ if(/^p\d/.test(x)) delete OPEN[x]; }); renderMine();
+    gs('saveLater',ks,sp.t,wy).then(r=>{ warm(); toast('あとでにしました：'+sp.t+(r&&r.n>=3?'（'+r.n+'回目）':''),[['元に戻す',()=>{ ks.forEach(k=>LATER.delete(k)); renderMine(); gs('undoLater',ks).catch(e=>relErr('※元に戻せませんでした（'+niceErr(e)+'）')); return true; }]]); }).catch(e=>{ ks.forEach(k=>LATER.delete(k)); renderMine(); relErr('※あとでにできませんでした。もう一度押してください（'+niceErr(e)+'）'); }); return; }
+  if(a.closest('.n-plw')) return;
+  if(a.dataset.pact==='det'){ const pk=pKey(sp), st=OPEN[pk]=OPEN[pk]||{}; st.det=!st.det; paintList(); return; }
+  c.classList.add('gone'); const ks=sp.os.map(o=>o.k); setTimeout(()=>{ sp.os.forEach(o=>{ if(o.it.kind==='letter') gs('saveLetter',o.key).then(()=>save(o.k,doneRec(o))).catch(e=>{ paintPlan(); relErr('※お客様リストに書けませんでした。もう一度押してください（'+niceErr(e)+'）'); }); else save(o.k,doneRec(o)); }); },220);
+  toast('完了にしました：'+sp.t,[['元に戻す',()=>{ ks.forEach(undo); return true; }]]); }); PLB.addEventListener('click',onPact);   // 10/13：順番の1つ＝件が2つのときは両方を完了に（元に戻すも両方）
+// ── 完了（今の本物と同じ：押したらすぐ。下の帯で 元に戻す・ひとこと・〇〇の分も）──
+function doneRec(o){ const it=o.it; return {key:o.key, all:false, sec:secOf(o), kind:it.kind||'line', title:it.title||'', detail:it.detail||'', body:String(it.body||'').slice(0,600), src:it.src||[], who:it.who||'', since:it.since||'', memo:'', doneAt:new Date().toISOString(), hidden:false}; }
+function finish(o,c){ const it=o.it, T=TALK[o.k]; const r={key:o.key, all:false, sec:secOf(o), kind:it.kind||'line', title:it.title||'', detail:it.detail||'', body:String(it.body||'').slice(0,600), src:it.src||[], who:it.who||'', since:it.since||'', memo:'', doneAt:new Date().toISOString(), hidden:false};
+  if(T&&T.log.length) r.talk=T.log.slice(-3).map(x=>'社長：'+String(x.q).slice(0,150)+'\nClaude：'+String(x.a).slice(0,200)).join('\n');
+  if(c) c.classList.add('gone'); const k=o.k; delete OPEN[k];
+  setTimeout(()=>{ if(c&&c.closest('.n-sheet')) c.remove(); save(k,r); if(T&&T.log.length&&SAMPLE) summarize(T,r.memo).then(s=>{ const cur=DONE[k]; if(s&&cur&&cur.doneAt===r.doneAt) save(k,Object.assign({},cur,s)); }).catch(()=>{}); },c?220:0);
+  const acts=[['元に戻す',()=>{ undo(k); return true; }],['ひとこと残す','memo']]; if((it.others||[]).length&&secOf(o)!=='wait') acts.push([it.others.join('・')+'の分も完了',()=>{ const cur=DONE[k]; if(cur) save(k,Object.assign({},cur,{all:true})); return true; }]);
+  const dk=(DUPOF[k]||[]).slice(); dk.forEach(x=>{ const d=BYK[x]; if(d) save(x,Object.assign({},r,{key:d.key,sec:secOf(d),title:d.it.title||''})); }); if(dk.length) acts[0]=['元に戻す',()=>{ undo(k); dk.forEach(undo); return true; }];   // 10/12：隠していた同じ題の件も完了に
+  const sk=(SAMEOF[k]||[]).slice(); if(sk.length) acts.push(['もう1つも完了にしますか',()=>{ sk.forEach(x=>{ const d=BYK[x]; if(d) save(x,Object.assign({},r,{key:d.key,sec:secOf(d),title:d.it.title||''})); }); return true; }]);
+  toast('完了にしました：'+(it.title||''),acts,k); }
+// 10/17：外してよさそうな件。「残す」を選ばなかった件を外し、選んだ件は残す（どちらも表「外す候補」に記録）。返事を待たずに見た目を変え、失敗したら元に戻して知らせる
+//  済んだかもの件は、外すと完了になる（サーバーが完了の履歴にも残す）。それ以外は台帳に残したまま画面から外す
+function candGo(C){ const out=[], keep=[], dn=[]; C.forEach(o=>{ if(CSEL[o.k]) keep.push(o); else { out.push(o); if(o.it.cand.m==='済んだかも') dn.push(o); } });
+  out.forEach(o=>{ CANDX[o.k]='out'; delete OPEN[o.k]; }); keep.forEach(o=>{ CANDX[o.k]='keep'; delete CSEL[o.k]; }); dn.forEach(o=>{ DONE[o.k]=Object.assign(doneRec(o),{memo:'外してよさそうな件から外した（済んだかも）'}); });
+  S.cand=false; renderAll(); { const y0=FP.getBoundingClientRect().top+scrollY-hdr.offsetHeight; if(scrollY>y0) scrollTo(0,y0); }   /* 一覧の上に戻す（32件を外すと、下の端に取り残されるため） */
+  gs('saveCand',out.map(o=>o.key),keep.map(o=>o.key)).then(r=>{ okErr(); const df=(r&&r.diff)||0, ks=r&&Array.isArray(r.keys)?r.keys:null;   /* diff：前に別の選び方で届いていた件（前の選び方のまま） */
+      toast((out.length?out.length+'件を外しました'+(keep.length?'・残した '+keep.length+'件':''):'残しました '+keep.length+'件')+(df?'（'+df+'件は、さっきの選び方のままです）':''),[['元に戻す',()=>{ candUndo(out,keep,dn,ks); return true; }]],null,true); })
+    .catch(e=>{ out.concat(keep).forEach(o=>{ delete CANDX[o.k]; }); keep.forEach(o=>{ CSEL[o.k]=true; }); dn.forEach(o=>{ delete DONE[o.k]; }); S.cand=true; renderAll(); relErr('※外せませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+// 10/17 統括：外した回を全部戻す（外した件・残した件とも、また「外してよさそうな件」に戻る。済んだかもで完了にした件は「まだ」に）
+function candUndo(out,keep,dn,ks){ const all=out.concat(keep); all.forEach(o=>{ delete CANDX[o.k]; }); dn.forEach(o=>{ delete DONE[o.k]; }); renderAll();
+  gs('undoCand',ks||all.map(o=>o.key)).then(r=>{ okErr(); warm(); const n=r&&typeof r.back==='number'?r.back:all.length; toast(n?'元に戻しました '+n+'件':'戻す件はありませんでした'); })
+    .catch(e=>{ out.forEach(o=>{ CANDX[o.k]='out'; }); keep.forEach(o=>{ CANDX[o.k]='keep'; }); dn.forEach(o=>{ DONE[o.k]=Object.assign(doneRec(o),{memo:'外してよさそうな件から外した（済んだかも）'}); }); renderAll(); relErr('※元に戻せませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+// 第49.5版：これを先に（すぐ画面の1番に。表に残し、AIが作り直すときも1番）
+function setFirst(key){ const prev=FIRST; FIRST={key,at:Date.now(),local:true}; S.rest=false; Object.keys(OPEN).forEach(x=>{ if(/^p\d/.test(x)) delete OPEN[x]; }); paintList(); scrollTo(0,Math.min(scrollY,FP.offsetTop));
+  gs('saveFirst',key).then(()=>warm()).catch(e=>{ FIRST=prev; paintList(); relErr('※先にできませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+const okErr=()=>{ const m=document.getElementById('relmsg'); if(m.classList.contains('err')){ m.hidden=true; m.classList.remove('err'); setHH(); } };
+function relErr(t){ const m=document.getElementById('relmsg'); m.hidden=false; m.classList.add('err'); m.classList.remove('busy'); m.textContent=t; setHH(); }
+async function save(k,r){ const prev=DONE[k]; if(r) DONE[k]=r; else delete DONE[k]; renderAll();
+  try{ await gs('saveDone',k,r||null); const m=document.getElementById('relmsg'); if(m.classList.contains('err')){ m.hidden=true; m.classList.remove('err'); setHH(); } }
+  catch(e){ if(prev) DONE[k]=prev; else delete DONE[k]; renderAll(); relErr('※「'+((r&&r.title)||(prev&&prev.title)||'この件')+'」の'+(r?'完了':'元に戻す')+'を保存できませんでした。もう一度押してください（'+niceErr(e)+'）'); } }
+// 完了したもの（この画面を作ったあとで完了になった件ではない、前からの完了）を元に戻すときは、件を画面に足してから戻す
+function undo(k){ if(!BYK[k]){ const r=DONE[k]; if(r){ const o=addIt({key:r.key,kind:r.kind,title:r.title,detail:r.detail,body:r.body,src:r.src,who:r.who,since:r.since},r.sec==='wait'?'wait':r.sec==='worry'?'worry':'todo'); o.k=k; BYK[k]=o; } } save(k,null); }
+// ── 任せる（名前を押すだけ。社外の人は書く）──
+// 10/11 社長「任せたらリストから消える挙動は変」：その場に「〇〇に任せました　元に戻す」を残す（タブを切り替えるまで）。任せたものは「任せた」のいちばん上
+function delegate(o,to,nm,memo){ const it=o.it, k=o.k, old={who:it.who,since:it.since,delegated:it.delegated}; const md=(new Date().getMonth()+1)+'/'+new Date().getDate();
+  GIVEN[k]={at:Date.now(),to:to}; it.who=nm?nm+(memo?'：'+memo:''):(memo||'（相手は未記入）'); it.since=md+'任せた'; it.delegated={at:Date.now(),to:to}; delete OPEN[k];
+  const c=LS_.querySelector('.n-cd[data-k="'+k+'"]'); const ph=h('div','n-gvd'); const tx=h('span',null,'→ '+(nm||memo||'社外の人')+'に任せました'); const ub=h('button',null,'元に戻す'); ub.type='button'; ub.disabled=true; ph.append(tx,ub);
+  if(c) c.replaceWith(ph); TABS=model(); paintTabs(); const G=groups(curTab(),S.mode); paintSub(G,S.sub); check();
+  gs('delegateItem',o.key,memo,to).then(()=>{ warm(); ub.disabled=false;
+      ub.onclick=()=>{ ub.disabled=true; ub.textContent='戻しています…'; gs('undoDelegate',o.key).then(()=>{ delete GIVEN[k]; Object.assign(it,old); if(!old.delegated) delete it.delegated; warm(); renderAll(); })
+        .catch(e=>{ ub.disabled=false; ub.textContent='元に戻す'; relErr('※元に戻せませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }; })
+    .catch(e=>{ delete GIVEN[k]; Object.assign(it,old); renderAll(); relErr('※「'+(it.title||'この件')+'」を任せられませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+// ── 下から出る窓 ──
+let SHEET=null;
+function sheet(title,sub){ closeSheet(); const sh=h('div','n-shade'), s=h('div','n-sheet'); s.append(h('div','grab')); const ti=h('div','ti'); if(sub) ti.append(document.createTextNode(sub)); ti.append(h('b',null,title)); s.append(ti);
+  sh.onclick=closeSheet; document.body.append(sh,s); SHEET={sh,s}; document.body.style.overflow='hidden'; s.addEventListener('click',onRow); return s; }
+function closeSheet(){ if(!SHEET) return; SHEET.sh.remove(); SHEET.s.remove(); SHEET=null; document.body.style.overflow=''; }
+const act=(s,label,small,fn,ck)=>{ const b=h('button','n-act'+(ck?' now':'')); b.type='button'; const l=h('span',null,label); if(small){ l.append(h('small',null,'　'+small)); } b.append(l); if(ck) b.append(h('span','ck','✓ 今')); b.onclick=fn; s.append(b); return b; };
+// 10/10 社長「整理するボタンはいらん」：分け方・最新にする・見る人の切り替えは、じぶんののいちばん下に小さく
+{ const w=h('div','n-tools'); const b1=h('button',null,S.mode==='hurry'?'種類で分ける':'急ぎで分ける'); b1.type='button'; b1.id='modeb'; b1.onclick=()=>setMode(S.mode==='hurry'?'kind':'hurry'); w.append(b1);   // 10/11 社長：更新は「すっきりナビ」のロゴを押す
+  if(window.__USERS&&window.__USERS.length){ const sel=h('select','as'); const o0=h('option',null,'人を切り替え'); o0.value=''; sel.append(o0);
+    window.__USERS.forEach(u=>{ const op=h('option',null,u.name); op.value=u.email; if(window.__OPEN&&window.__OPEN.who===u.email) op.selected=true; sel.append(op); });
+    sel.addEventListener('change',()=>{ if(sel.value){ const a=document.createElement('a'); a.href=(window.__URL||'')+'?as='+encodeURIComponent(sel.value); a.target='_top'; document.body.append(a); a.click(); } }); w.append(sel); }
+  { const ap=window.parent&&window.parent!==window&&window.parent.__app; if(ap&&ap.viewAs&&window.__ASLIST&&window.__ASLIST.length){ const sel=h('select','as'); const o0=h('option',null,'人を切り替え（見るだけ）'); o0.value=''; sel.append(o0);   /* 10/17：社長のアプリで、スタッフの画面を見るだけで見る */
+    window.__ASLIST.forEach(u=>{ const op=h('option',null,u.name); op.value=u.email; sel.append(op); }); sel.addEventListener('change',()=>{ if(sel.value) ap.viewAs(sel.value); }); w.append(sel); } }
+  BOT.prepend(w); }
+function setMode(k){ if(S.mode===k) return; S.mode=k; S.sub=''; renderMine(); const mb=document.getElementById('modeb'); if(mb) mb.textContent=k==='hurry'?'種類で分ける':'急ぎで分ける'; gs('saveTabPref',k).catch(e=>relErr('※分け方を残せませんでした')); }
+function waitSheet(ck){ const L=IT.filter(o=>{ const b=bucket(o); return (b==='stale'||b==='quiet'||b==='back')&&(ck==null||ckOf(o)===ck); }).sort((a,b)=>waitDays(b)-waitDays(a));
+  const s=sheet(ck?caseLabel(ck)+'の任せたこと':'任せたもの '+L.length,'返事が来たら「完了」。返事のないまま'+WAIT_BACK_DAYS+'日たったものが上');
+  if(!L.length) s.append(h('div','n-none','任せたものはありません'));
+  L.forEach(o=>s.append(rowOf(o,true,true)));
+  act(s,'閉じる',null,closeSheet); }
+function moveSheet(o){ const cur=ckOf(o); const s=sheet(o.it.title||'','移す先');
+  CASEORD.forEach(k=>act(s,CASEN[k],null,()=>doMove(o,k),cur===k));
+  act(s,'案件以外',null,()=>doMove(o,'-'),!cur||!CASEN[cur]); act(s,'やめる',null,closeSheet); }
+function doMove(o,ck){ closeSheet(); const it=o.it, prev={caseKey:it.caseKey,caseName:it.caseName,moved:it.moved};
+  if((ck==='-'?'':ck)===(it.caseKey||'')) return;
+  it.caseKey=ck==='-'?'':ck; it.caseName=ck==='-'?'':CASEN[ck]; it.moved=true; renderAll();
+  const back=()=>{ Object.assign(it,prev); renderAll(); };
+  gs('saveCaseMove',o.key,ck).then(()=>{ warm(); toast('「'+(it.title||'この件')+'」を'+(ck==='-'?'案件以外':caseLabel(ck))+'へ移しました',[['元に戻す',()=>{ back(); gs('saveCaseMove',o.key,prev.moved?(prev.caseKey||'-'):'').then(warm).catch(e=>relErr('※元に戻せませんでした。もう一度移し直してください（'+niceErr(e)+'）')); return true; }]]); })
+    .catch(e=>{ back(); relErr('※「'+(it.title||'この件')+'」を移せませんでした。もう一度押してください（'+niceErr(e)+'）'); }); }
+// ── じぶんのの下：見ているLINEグループ・アプリにする・版 ──
+const SYSW=h('div'); BOT.append(SYSW);
+if(D.groups){ const gx=h('details','groups'); gx.append(h('summary',null,'LINEグループ（'+D.groups.length+'）')); gx.append(h('div',null,D.groups.join('、')||'なし')); BOT.append(gx); }
+if(!window.__APP){ const pb=h('button','tb','アプリにする'); pb.type='button'; pb.style.cssText='margin:10px 0 4px;font-size:13px;padding:4px 12px';
+  pb.onclick=async()=>{ pb.disabled=true; try{ const r=await gs('appPairCode'); const bx=h('div','news'); bx.append(h('div',null,'アプリに打つ数字')); const cd=h('div',null,r.code); cd.style.cssText='font-size:34px;font-weight:700;letter-spacing:6px;margin:6px 0'; bx.append(cd,h('div',null,r.min+'分だけ使えます。人に見せないでください')); pb.replaceWith(bx); }
+    catch(e){ pb.disabled=false; pb.textContent='数字を出せませんでした（'+niceErr(e)+'）'; } }; BOT.append(pb); }
+const VER=h('div','ver',VER_LABEL); VER.hidden=true; BOT.append(VER);   // 10/12：版と秒数は画面に出さない（裏の記録だけ）
+const sysWarn=(list)=>{ if(!(list||[]).length) return; const wd=h('details','donefold sysw'); wd.append(h('summary',null,'仕組みの注意 '+list.length+'件')); const wb=h('div','box'); list.forEach(w=>wb.append(h('div','news',String(w).trim()))); wd.append(wb); SYSW.append(wd); };
+if(window.__WARNLATER) setTimeout(()=>{ gs('warnsLater').then(sysWarn).catch(()=>{}); },1500);
+// ── 横断工程（全部の案件の工程表・近い順。中身は第40版のまま）。10/10 社長：じぶんのいちばん上に3行（押すと全部に広がる。箱の中だけ動かす形はやめた）──
+function ovBlock(limit,onRow){ const SEGS=(D.stg||{}).seg||[], COL=['oklch(0.74 0.11 205)','oklch(0.75 0.13 165)','oklch(0.79 0.14 125)','oklch(0.82 0.15 85)','oklch(0.76 0.15 45)','oklch(0.72 0.13 5)'];
+  const ov=h('div','ov'); const hd=h('div','ov-r ov-h'); hd.append(h('span','ov-n','')); const ph=h('div','ov-ph'); SEGS.forEach(([n,f])=>{ const x=h('span',null,n); x.style.flex=f; ph.append(x); }); hd.append(ph,h('span','ov-d','引渡')); ov.append(hd);
+  GL.filter(g=>!isEnd(g)).forEach((g,i)=>{ const r=h('button','ov-r'); r.type='button'; r.dataset.key=g.key; if(limit&&i>=limit) r.hidden=true; const nn=h('span','ov-n',String(g.name).replace(/さま.*$/,'').replace(/\s.*$/,'')); { const od=ordOf(g); if(od&&od.short) nn.append(h('i','ov-o',od.short)); } r.append(nn);
+    const b=h('div','ov-b'); SEGS.forEach(([n,f],k)=>{ const x=h('i'); x.style.flex=f; x.style.background=COL[k]; b.append(x); }); const p=barPos(g); if(p!=null){ const d=h('div','ov-now'+(g.nowEst?' est':'')); d.style.left='calc('+Math.min(100,Math.max(0,p))+'% - 5px)'; b.append(d); }
+    r.append(b,h('span','ov-d'+(g.handLabel==='未確認'?' un':''),(g.handLabel&&g.handLabel!=='未確認'?String(g.handLabel):'未定').replace(/頃$/,''))); r.addEventListener('click',()=>onRow(g)); ov.append(r); });
+  return ov; }
+// 10/10 社長「引渡が近いものだけより、全体像をみんなが把握できるのが大事」：全部の案件を細い行で（たためる。たたんだかはこのスマホに覚える）
+// 10/11 社長：横断工程は、どの画面でも同じ位置（いちばん上）に。行を押すと、案件の画面ではその案件へ、ほかではじぶんのその案件のタブへ
+const OVCB=g=>{ if(S.view==='cases'){ openCase(g.key); return; } if(TABS.some(t=>t.k===g.key)){ if(S.view!=='mine') go('mine'); S.tab=g.key; S.sub=''; renderMine(); const b=TB.querySelector('button.on'); if(b) TB.scrollTo({left:Math.max(0,b.offsetLeft-TB.offsetLeft-84),behavior:'smooth'}); } else openCase(g.key); };
+const KF='pc_ovfold', fold=()=>{ try{ return localStorage.getItem(KF)==='1'; }catch(e){ return false; } }; const OVT=h('button','ov-more'); OVT.type='button'; let OVEL=null;
+const paintF=()=>{ if(!OVEL) return; const f=fold(); OVEL.classList.toggle('folded',f); OVT.textContent='横断工程 '+(f?'▼':'▲'); };   // 10/11 社長：「近い順」「全体を出す」ではなく「横断工程」をはっきり、三角もはっきり
+OVT.onclick=()=>{ try{ localStorage.setItem(KF,fold()?'0':'1'); }catch(e){} paintF(); setHH(); };
+// 第48版：今どこを押したら、その場で横断工程の位置も変える（作り直して同じ場所に差し替える）
+function paintOv(){ if(!GL.length) return; const o=ovBlock(0,OVCB); o.classList.add('n-ov3'); o.prepend(OVT); if(OVEL) OVEL.replaceWith(o); else P.prepend(o); OVEL=o; o.hidden=S.view!=='mine'; paintF(); }
+paintOv(); P.insertBefore(DJB,OVEL||VW.mine); P.insertBefore(SMB,OVEL||VW.mine);   // 10/17：済んだかもの1行は、会社の大事なことのすぐ下
+// 10/17 統括の判断（安全のため）：社長がほかの人の画面に切り替えて見ているときは見るだけ。押す所は押せない見た目にし、押しても書かずに帯で知らせる（書き込みはサーバーでも断る：コード.js noWriteAsOther_）
+if(window.__VIEWONLY){ document.body.classList.add('viewonly'); { const vb=h('div','n-vo',(isOwnerName?'胡内（社長）':String(window.__NAME||'').split(/[\s　]+/)[0]+'さん')+'の画面を見ています（見るだけ）'); const ap=window.parent&&window.parent!==window&&window.parent.__app; if(ap&&ap.viewAs){ const bk=h('button','n-vob','自分の画面に戻る'); bk.type='button'; bk.onclick=()=>ap.viewAs(''); vb.append(bk); } P.insertBefore(vb,P.firstChild); }   /* 10/17：アプリでは「自分の画面に戻る」 */
+  document.addEventListener('click',e=>{ const a=e.target.closest('[data-act],[data-pact],[data-djact],.dcok,.n-cgo button,.hdone,.doneok,#modeb,.bs button,.cfbtn,.it-b button,.dtx.tap,.fix,.ks-form button,input[type=checkbox]'); if(!a) return;   /* 10/17 確かめ役：分け方の切り替え・案件の今どこ・工程の済・確認済み・予定日も押せない */ if((a.dataset.act||a.dataset.pact||a.dataset.djact)==='det') return; e.preventDefault(); e.stopPropagation(); toast('見るだけの画面です'); },true); }   // 10/17：会社の大事なことは、私の仕事のいちばん上（横断工程より上）
+// ── 案件（今の案件カード：今の段階・案件を終える・工程を見る〔済・不要・未に戻す・日程・確認済み〕・案件の表）──
+const CV=h('div','n-v'); VW.cases.append(CV);
+// 案件の中身が変わったら、その場で描き直す（案件の行・横断工程・じぶんのの見出し・開いている工程の窓）
+const CSEQ={}; const caseSeq=k=>(CSEQ[k]=(CSEQ[k]||0)+1);
+function caseChanged(g,schedToo){ paintOv(); if(S.view==='cases') renderCases(); if(S.view==='mine'&&S.tab===g.key) paintHead(curTab()); if(CP&&CP.dataset.key===g.key) repaintCase();
+  if(schedToo){ const w=document.querySelector('.ks-wrap[data-key="'+CSS.escape(g.key)+'"]'); if(w){ const y=w.scrollTop; w.__close(); openSched(g); const w2=document.querySelector('.ks-wrap[data-key="'+CSS.escape(g.key)+'"]'); if(w2) w2.scrollTop=y; } } }
+// 今どこを押す：その場で行・横断工程・案件のページを変え、保存は裏で。失敗したら元に戻して1行。アフター・終わりは一覧から消え、下の帯で「元に戻す」
+function setStage(g,k){ if(g.stage===k){ closeSheet(); return; } const prev={stage:g.stage,bar:g.bar,now:g.now,nowEst:g.nowEst,big:g.big,nx:g.nx,sub:g.sub,stageBy:g.stageBy}, n=caseSeq(g.key);
+  g.stage=k; g.sub=''; g.stageBy={who:String(window.__NAME||''),at:Date.now()}; const i=STG_MS.findIndex(x=>x[0]===k); if(i>=0){ g.bar=STG_MS[i][1]; g.now=STG_MS[i][2]; g.nowEst=false; const nx=STG_MS[i+1]; g.big=nx?'次は'+nx[0]:'引渡済'; g.nx=nx?{k:nx[0],d:'',fix:false}:null; }
+  closeSheet(); caseChanged(g);
+  if(!isEnd(g)){ const c=CV.querySelector('.n-crow[data-key="'+CSS.escape(g.key)+'"]'); if(c){ c.classList.add('flash'); setTimeout(()=>c.classList.remove('flash'),900); } }
+  const back=()=>{ Object.assign(g,prev); caseChanged(g); };
+  gs('saveCaseStage',g.key,k).then(r=>{ if(typeof r==='string'&&r!==k) throw new Error('今どこを保存できませんでした'); if(n===CSEQ[g.key]) okErr(); })
+    .catch(e=>{ if(n!==CSEQ[g.key]) return; back(); niceErr(e); relErr('※'+shortCase(g.name)+'さまの今どこを保存できませんでした'); });
+  if(isEnd(g)) toast('「'+g.name+'」を'+k+'にしました',[['元に戻す',()=>{ const m=caseSeq(g.key); back(); gs('saveCaseStage',g.key,prev.stage||'').catch(e=>{ if(m!==CSEQ[g.key]) return; g.stage=k; caseChanged(g); niceErr(e); relErr('※元に戻せませんでした'); }); return true; }]]); }
+// 工程：押したらすぐ窓を開いて「読んでいます」、届いたら中身を入れる（画面を作るときは工程の中身を作らない＝第46版で速くした分）。失敗は窓の中に1行
+function openSchedLive(g){ const w0=openSched({key:g.key,name:g.name,sched:{loading:true}});
+  gs('getSchedule',g.key).then(f=>{ g.sched=f; if(!w0.isConnected) return; w0.__close(); openSched(g); })
+    .catch(e=>{ niceErr(e); if(!w0.isConnected) return; const L=w0.querySelector('.kload'); if(L){ L.className='err kload'; L.textContent='工程を読めませんでした。もう一度開いてください'; } }); }
+// ── 第48版（企画4章）：案件の一覧は1行（名前・今どこ・次の節目と日）。押すと「案件のページ」を画面いっぱいに（中身はもう届いているので、読みに行かない）──
+// 件の数＝私の仕事のその案件のタブの数（10/12：任せた件は数えない。タブとそろえる）。第50.7版（総点検）：いま動くことに出した件はタブに出ないので、ここでも数えない（タブの数と同じ決め方を使う）
+const caseN=key=>{ const t=(TABS||[]).find(x=>x.k===key); return t?t.items.length:0; };
+const PHW=(D.stg||{}).ph||[];   // 第51.1版：区切りの名前はサーバー（案件.js PH_NAME_）から受け取る
+const caseNm=key=>{ const n=String(CASEN[key]||''), sur=shortCase(n), p=(n.match(/（[^）]*）/)||[''])[0]; return sur?sur+'さま'+p:n; };
+function nowOf(g){ if(!g) return ''; if(g.stage) return stgLabel(g.stage)+(isEnd(g)?'':'済'); if(g.handLabel==='引渡済') return '引渡済'; return g.now!=null&&g.ph!=null?(PHW[g.ph]||''):''; }
+const shortD=t=>String(t||'').replace(/^約/,'').replace(/（.）/g,'').replace(/\s*\d{1,2}:\d\d/,'').replace(/ごろ$|頃$/,'').trim();
+function msOf(g){ if(!g) return []; const L=[];   // 第51.0版：次の節目はサーバーが項目（nx）で渡す。big・sub の文字は読まない
+  if(g.nx&&g.nx.k) L.push({k:g.nx.k,d:shortD(g.nx.d),fix:!!g.nx.fix});
+  if(!(L[0]&&L[0].k==='引渡')&&g.handLabel!=='引渡済'&&g.stage!=='引渡'&&!isEnd(g)){ const hl=String(g.handLabel||''); L.push(hl&&hl!=='未確認'?{k:'引渡',d:shortD(hl),fix:!g.mark||g.mark==='全体工程'}:{k:'引渡',d:'',fix:false}); }
+  return L.slice(0,2); }
+function caseRow(key){ const g=GL.find(x=>x.key===key), ms=msOf(g)[0];
+  const r=h('button','n-crow'); r.type='button'; r.dataset.key=key;
+  r.append(h('span','t',caseNm(key)),h('span','s',nowOf(g)),h('span','x',ms?(ms.k+' '+(ms.d||'未定')):''),h('span','go','›')); r.onclick=()=>casePage(key); return r; }
+let CP=null, CP_BACK=false;   // CP_BACK：閉じたあとの「戻る」がまだ終わっていない（すぐ次を開いても、その戻るで閉じないように）
+function casePage(key){ if(CP) closeCase(true); const W=h('div','n-cp'); W.dataset.key=key; const IN=h('div','in'); W.append(IN); paintCase(IN,key);
+  document.body.append(W); CP=W; document.body.style.overflow='hidden';
+  if(!CP_BACK){ try{ history.pushState({cp:key},''); }catch(e){} } }   // 端末の戻る操作で閉じる
+function closeCase(fromPop){ if(!CP) return; CP.remove(); CP=null; document.body.style.overflow='';
+  if(!fromPop){ try{ if(history.state&&history.state.cp){ CP_BACK=true; history.back(); setTimeout(cpBackDone,1500); } }catch(e){ CP_BACK=false; } } }
+function cpBackDone(){ if(!CP_BACK) return; CP_BACK=false; if(CP&&!(history.state&&history.state.cp===CP.dataset.key)){ try{ history.pushState({cp:CP.dataset.key},''); }catch(e){} } }
+addEventListener('popstate',()=>{ if(CP_BACK){ cpBackDone(); return; } if(!CP) return; if(history.state&&history.state.cp===CP.dataset.key) return; document.querySelectorAll('.ks-wrap').forEach(w=>w.__close&&w.__close()); closeCase(true); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&CP&&!document.querySelector('.ks-wrap,.gn-modal,.n-sheet')) closeCase(); });
+function repaintCase(){ if(!CP) return; const y=CP.scrollTop, IN=CP.firstChild; IN.textContent=''; paintCase(IN,CP.dataset.key); CP.scrollTop=y; }
+function paintCase(IN,key){ const g=GL.find(x=>x.key===key), n=caseN(key);
+  const hd=h('div','cp-h'); hd.append(h('div','nm',CASEN[key]||'')); const x=h('button','x','×'); x.type='button'; x.setAttribute('aria-label','閉じる'); x.onclick=()=>closeCase(); hd.append(x); IN.append(hd);
+  { const od=ordOf(g); if(od) IN.append(h('div','cp-ob'+(od.k==='まだ'?' un':''),od.text)); }
+  { const od=ordOf(g); if(g&&g.outBoss&&!(od&&od.boss)) IN.append(h('div','cp-ob',g.outBoss)); }   /* 監督の欄の名前が上の行に出ているときは2回出さない */   // 10/17 統括の決定：監督が社外の人の案件は「◯◯さんが対応中」（監督の仕事は社内のだれの件にもしない）
+  const sec=(label,right)=>{ const s=h('div','cp-s'), sh=h('div','sh'); sh.append(h('span',null,label)); if(right) sh.append(right); s.append(sh); IN.append(s); return s; };
+  const row=(s,k,v)=>{ const r=h('div','cp-r'); r.append(h('span','k',k)); const vv=h('span','v'); if(typeof v==='string') vv.textContent=v; else vv.append(v); r.append(vv); s.append(r); return r; };
+  if(g){ // 今どこ
+    let by=null; const sb=g.stageBy; if(sb&&(sb.who||sb.at)){ const d=sb.at?new Date(sb.at):null; by=h('span','by',[sb.who,d&&!isNaN(d)?(d.getMonth()+1)+'/'+d.getDate():''].filter(Boolean).join(' ')); }
+    const s1=sec('今どこ',by); const bs=h('div','bs'); const on=stgOn(g.stage);
+    STG_BTN.forEach(([v,l])=>{ const b=h('button',v===on?'on':null,l); b.type='button'; b.dataset.st=v; b.onclick=()=>setStage(g,v); bs.append(b); }); s1.append(bs);
+    // 基本（お客様リストを読むだけ）
+    const f=g.info||{none:'nono'}, s2=sec('基本');
+    if(f.none) s2.append(h('div','cp-none',f.none==='err'?'リストを読めませんでした':'リストとつながっていません'));
+    else { if(f.addr){ const a=h('a',null,f.addr); a.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(f.addr); a.target='_blank'; a.rel='noopener'; row(s2,'住所',a); }
+      const bl=[f.build,f.range].filter(Boolean).join('・'); if(bl) row(s2,'建物',bl); if(f.no) row(s2,'番号',f.no);
+      const ppl=[['営業',f.sales],['設計',f.design],['業者',f.builder]].filter(p=>p[1]); if(ppl.length){ const s3=sec('人'); ppl.forEach(p=>row(s3,p[0],p[1])); } }
+    // 10/15 第49.1版：段階の仕事（受け持ち表から。担当の名前つき）
+    if(g.jobs&&g.jobs.jobs&&g.jobs.jobs.length){ const s5=sec(g.jobs.name+'の仕事'); g.jobs.jobs.forEach(j=>{ const lo=IT.find(x=>x.key==='stage|'+key+'|'+j.st+'|'+j.t), jd=j.done||!!(lo&&isDone(lo)), r=h('div','cp-j'+(jd?' dn':'')), v=h('span','v'), tl=jd?'済':j.st<g.jobs.st?(STAGE_NM[j.st]||''):'', t=Array.from(String(j.t||'')), k=Math.max(0,t.length-2);   /* 10/17 第52.3版：この画面で済にした工程表の項目も済に・段階に入った日 */
+      if(tl){ v.append(t.slice(0,k).join('')); const nb=h('span','nb',t.slice(k).join('')); nb.append(h('span','tg',tl)); v.append(nb); } else v.textContent=t.join('');   /* 10/17 第52.4版：「済」が1字だけ次の行に落ちないよう、題の最後の2字とくっつける。済は題のすぐ後ろ、発生の日はその後 */
+      if(j.atS){ const b=h('span','tg bn'); b.append(h('span','nb',j.atS+' 発生')); if(j.atIn) b.append(h('span','nb','（取り込み日）')); v.append(b); }
+      r.append(v,h('span','w',jobWho(j.who))); s5.append(r); }); }
+    // 次の節目（2つまで）・工程
+    const kb=h('button','cp-btn','工程'); kb.type='button'; kb.onclick=()=>openSchedLive(g); const s4=sec('次の節目',kb);
+    msOf(g).forEach(m=>{ const v=h('span'); v.append(document.createTextNode(m.d||'未定')); if(m.d) v.append(h('span','tg',m.fix?'決まり':'目安')); row(s4,m.k,v); }); }
+  const ft=h('div','cp-f');
+  if(g&&g.info&&g.info.folder){ const a=h('a','cp-btn','フォルダ'); a.href=g.info.folder; a.target='_blank'; a.rel='noopener'; ft.append(a); }
+  if(n){ const b=h('button','cp-btn','件 '+n); b.type='button'; b.onclick=()=>{ closeCase(); go('mine'); S.tab=key; S.sub=''; renderMine(); scrollTo(0,0); }; ft.append(b); }
+  if(ft.childNodes.length) IN.append(ft); }
+function renderCases(){ CV.textContent=''; const ks=CASEORD.filter(k=>!isEnd(GL.find(x=>x.key===k))); if(!ks.length){ CV.append(empty()); return; } const L=h('div','n-clist'); ks.forEach(k=>L.append(caseRow(k))); CV.append(L);
+  const G=D.genba||{}; if(G.sheet){ const sh=h('div','gn-sheet'); const a=h('a',null,'案件の表'); a.href=G.sheet; a.target='_blank'; sh.append(a); CV.append(sh); } }
+// 横断工程の行・じぶんのの「案件 ›」から。10/14：今いる画面の上に開く（閉じたら元の画面に戻る。前は案件の画面に切り替わっていた）
+function openCase(key){ casePage(key); }
+window.__caseMenu=(key)=>openCase(key);
+// ── 予定（今日・この先の忙しい日・明日からの予定。中身はそのまま）──
+{ const V=h('div','n-v'); VW.sched.append(V);
+  if(!D.noCal){ V.append(h('h2',null,(D.date||'今日')+'の予定')); const ts=h('div','box');
+    (D.today&&D.today.length?D.today:[{t:'',name:'今日の予定なし'}]).forEach(e=>{const r=h('div','ev'); r.append(h('span','t',e.t||'')); const s=h('span'); const nm=noEmoji(e.name); if(e.url){const a=h('a',null,nm); a.href=e.url; a.target='_blank'; s.append(a);} else s.textContent=nm; r.append(s); ts.append(r);});
+    const busy0=(D.next||[]).filter(d=>d.busy); if(busy0.length){ const a=h('div','ahead'); a.style.cssText='font-size:13.5px;color:var(--sub);margin-top:4px'; a.append(document.createTextNode('この先：')); busy0.forEach((d,i)=>{ if(i) a.append(document.createTextNode('、')); a.append(document.createTextNode(String(d.day||'')+' は')); const b=h('b',null,d.busy); b.style.color='var(--hot)'; a.append(b); }); ts.append(a); }
+    V.append(ts); }
+  V.append(h('h2',null,'明日からの予定')); const nb=h('div','box'); (D.next||[]).forEach(d=>{const dd=h('div','day'); const dn=h('div','dayname',d.day||''); if(d.busy) dn.append(h('span','busy',d.busy)); dd.append(dn);
+    (d.evs||[]).forEach(e=>{const r=h('div','ev'); r.append(h('span','t',e.t||'')); const s=h('span'); if(e.url){const a=h('a',null,e.name); a.href=e.url; a.target='_blank'; s.append(a);} else s.append(document.createTextNode(e.name||'')); if(e.note){s.append(document.createTextNode(' ')); s.append(h('small',null,e.note));} r.append(s); dd.append(r);}); nb.append(dd);});
+  if(!(D.next||[]).length) nb.textContent='なし'; V.append(nb); }
+// ── 完了（みんなの完了・完了したもの〔行を押すと 元に戻す〕）──
+const DV=h('div','n-v n-done'); VW.done.append(DV);
+function renderDone(){ DV.textContent='';
+  if(D.doneList){ const dd=h('details','donefold'); dd.append(h('summary',null,'みんなの完了 '+D.doneList.length)); const db=h('div','box'); D.doneList.forEach(o=>{ const r=h('div','news'); r.append(h('span','tagdone',o.t)); const b=h('div'); b.append(h('b',null,o.by),document.createTextNode('　'+(o.title||'')+(o.caseName?'（'+o.caseName+'）':''))); r.append(b); db.append(r); }); if(!D.doneList.length) db.textContent='なし'; dd.append(db); DV.append(dd); }   // 第36版（10/8 社長「件数だけ。押したら出る」）のまま
+  const L=Object.keys(DONE).filter(k=>DONE[k]&&!DONE[k].hidden).sort((a,b)=>String(DONE[b].doneAt||'').localeCompare(String(DONE[a].doneAt||'')));
+  DV.append(h('h2',null,'完了したもの（'+L.length+'）')); const box=h('div','box'); if(!L.length) box.textContent='なし';
+  L.forEach(k=>{ const r=DONE[k], row=h('div','news'); const b=h('div'); b.append(h('div',null,r.title||'')); const d=r.doneAt?new Date(r.doneAt):null;
+    b.append(h('div','memo','✓ '+(r.memo||'完了')+(d&&!isNaN(d)?'（'+(d.getMonth()+1)+'/'+d.getDate()+'）':''))); const ls=[]; if(r.decided) ls.push('決めたこと：'+r.decided); if(r.reason) ls.push('理由：'+r.reason); if(r.forecast) ls.push('予想：'+r.forecast); if(ls.length) b.append(h('div','memo memo2',ls.join('\n')));
+    row.classList.add('dn'); row.onclick=e=>{ if(e.target.closest('a,button')) return; const u0=b.querySelector('.undo'); if(u0){ u0.remove(); return; } const u=h('button','undo','元に戻す'); u.type='button'; u.onclick=()=>undo(k); b.append(u); }; row.append(b); box.append(row); });   // 第48版（企画1章）：行を押したときだけ「元に戻す」1つ。「一覧から消す」はやめた
+  DV.append(box); }
+// ── 切り替え・状態（開き直し・5分以上離れたら「すべて」から）──
+let WENT=false;
+function go(k){ if(!VW[k]) return; const was=S.view; if(WENT&&was===k&&k==='mine'){ scrollTo(0,0); return; } WENT=true; Object.keys(VW).forEach(x=>VW[x].hidden=x!==k); Object.keys(NB).forEach(x=>NB[x].classList.toggle('on',x===k)); S.view=k; if(OVEL) OVEL.hidden=k!=='mine'; paintDaiji(); paintSumi(); if(k==='done') renderDone(); if(k==='cases') renderCases(); if(was!==k) scrollTo(0,0); hint(); saveState(); }   // 10/15：横断工程は「私の仕事」の画面だけ
+const SS={ get(){ try{ return JSON.parse(sessionStorage.getItem('pc_tabst')||'null'); }catch(e){ return null; } }, set(v){ try{ sessionStorage.setItem('pc_tabst',JSON.stringify(v)); }catch(e){} } };
+function saveState(){ SS.set({view:S.view,tab:S.tab,sub:S.sub,cand:!!S.cand,at:Date.now()}); }
+{ const st=SS.get(); if(st&&Date.now()-st.at<BACK_MIN*60000){ S.tab=st.tab||'all'; S.sub=st.sub||''; S.cand=!!st.cand; S.view=NAV_SHOW.indexOf(st.view)>=0?st.view:'mine'; } }
+let hiddenAt=0; document.addEventListener('visibilitychange',()=>{ if(document.hidden){ hiddenAt=Date.now(); saveState(); sendTabMs(); return; }
+  if(hiddenAt&&Date.now()-hiddenAt>=BACK_MIN*60000){ S.tab='all'; S.sub=''; closeSheet(); closeCase(); renderMine(); go('mine'); TB.scrollLeft=0; } });
+function renderAll(){ renderMine(); if(S.view==='done') renderDone(); if(S.view==='cases') renderCases(); }
+// ── 漏れの確かめ（開くたび・押すたび）：届いた件＝すべての件＋返事のない任せたこと＋出していない任せたこと＋完了。案件のタブの合計＝すべて。下のタブの合計＝上のタブ。画面の行の数＝下のタブの数 ──
+let CHK_SENT=false;
+function check(){ const bk={}; IT.forEach(o=>{ const b=bucket(o); bk[b]=(bk[b]||0)+1; }); const all=TABS[0]; const bad=[];
+  const live=(bk.todo||0)+(bk.worry||0)+(bk.back||0); if(all.items.length+PKS.size!==live) bad.push('すべて '+all.items.length+'・いま動くこと '+PKS.size+'・数えた '+live);
+  const sumT=TABS.slice(1).reduce((a,t)=>a+t.items.length,0); if(sumT!==all.items.length) bad.push('タブの合計 '+sumT+'・すべて '+all.items.length);
+  const tot=live+(bk.reply||0)+(bk.stale||0)+(bk.quiet||0)+(bk.dup||0)+(bk.hfold||0)+(bk.done||0)+(bk.cand||0)+(bk.gone||0)+(bk.daiji||0)+(bk.sumi||0)+(bk.kotei||0); if(tot!==IT.length) bad.push('届いた件 '+IT.length+'・置き場所 '+tot);
+  { const sumC=TABS.slice(1).reduce((a,t)=>a+t.cand.length,0); if(all.cand.length!==(bk.cand||0)||sumC>all.cand.length) bad.push('外してよさそうな件 '+all.cand.length+'・タブの合計 '+sumC+'・数えた '+(bk.cand||0));
+    if(all.cand.some(o=>all.items.indexOf(o)>=0||PKS.has(o.k))) bad.push('外してよさそうな件が2か所に');
+    const t0=curTab(), g0=groups(t0,S.mode).find(x=>x.k===S.sub), cl=LS_.querySelector('.n-cand'), cn=g0&&!g0.wait?t0.cand.length:0, cr=LS_.querySelectorAll('.n-candw > .n-cd').length;
+    if(!!cn!==!!cl||cl&&cl.textContent.indexOf(' '+cn+'件')<0||S.cand&&cl&&cr!==cn) bad.push('外してよさそうな件の行 '+cr+'・'+cn); }
+  { const L=djLive(), dr=DJB.querySelectorAll(':scope > .n-dj').length, want=S.djMore?L.length:Math.min(L.length,DJSHOW); if(dr!==want) bad.push('会社の大事なこと '+dr+'・'+want);   /* 10/17：大事なことの件が一覧・いま動くことにも出ていないか（2か所に出さない） */
+    { const sl=SMB.querySelector('.n-sumi'), sr=SMB.querySelectorAll('.n-sumiw > .n-cd').length; if(SUMI.length!==(bk.sumi||0)||!!SUMI.length!==!!sl||sl&&sl.textContent.indexOf('済んだかも '+SUMI.length+'件')<0||S.sumi&&sl&&sr!==SUMI.length) bad.push('済んだかもの件 '+SUMI.length+'・数えた '+(bk.sumi||0)+'・行 '+sr);   /* 10/17：1行の数＝中の行の数・ほかの置き場所と重ならない */
+      if(SUMI.some(o=>all.items.indexOf(o)>=0||PKS.has(o.k)||all.cand.indexOf(o)>=0||LS_.querySelector(':scope > .n-cd[data-k="'+o.k+'"]'))) bad.push('済んだかもの件が2か所に'); }
+    let two=0; IT.forEach(o=>{ if(bucket(o)==='daiji'&&(LS_.querySelector(':scope > .n-cd[data-k="'+o.k+'"]')||PKS.has(o.k)||all.items.indexOf(o)>=0)) two++; }); if(two) bad.push('会社の大事なことの件が2か所に '+two); }
+  if(IT.length<IT0.todo+IT0.worry+IT0.wait) bad.push('届いた件 '+(IT0.todo+IT0.worry+IT0.wait)+'・画面 '+IT.length);
+  const sumW=TABS.slice(1).reduce((a,t)=>a+t.waits.length,0), allW=(bk.reply||0)+(bk.stale||0)+(bk.quiet||0); if(sumW!==allW||TABS[0].waits.length!==allW) bad.push('任せた タブの合計 '+sumW+'・すべて '+TABS[0].waits.length+'・数えた '+allW);
+  TABS.forEach(t=>['kind','hurry'].forEach(m=>{ const n=groups(t,m).filter(g=>!g.wait).reduce((a,g)=>a+g.items.length+(g.old||[]).length,0); if(n!==t.items.length) bad.push(t.label+' の下のタブ '+n+'・'+t.items.length); }));
+  const g=groups(curTab(),S.mode).find(x=>x.k===S.sub); const rows=LS_.querySelectorAll(':scope > .n-cd').length+0; if(g&&rows!==g.items.length) bad.push('画面の行 '+rows+'・'+g.label+' '+g.items.length);
+  if(g&&g.stale){ const F=foldOf(curTab()), fr=LS_.querySelectorAll('.n-wlw > .n-cd').length, fl=LS_.querySelector('.n-wl:not(.n-old):not(.n-cand)'); if(F.length&&!fl||!F.length&&fl||S.fold&&fr!==F.length) bad.push('任せた件の行 '+fr+'・'+F.length); }
+  { const kn=KOTEI.length, el=LS_.querySelector(':scope > .n-gp'), g1=groups(curTab(),S.mode).find(x=>x.k===S.sub), want=!!(g1&&g1.kt), tx=el?el.querySelector('.t').textContent:'';   /* 10/17 第52.3版：工程表の1件＝数えた数・開いた中のまだの行の数・ほかの置き場所と重ならない */
+    if(kn!==(bk.kotei||0)) bad.push('工程表 '+kn+'・数えた '+(bk.kotei||0));
+    if(want!==!!el||el&&tx!=='工程表の未着手 '+kn+'件') bad.push('工程表の1件 '+(tx||'無い')+'・'+kn);
+    if(el&&OPEN.kt&&OPEN.kt.det&&el.querySelectorAll('.n-gk:not(.on)').length!==kn) bad.push('工程表の中の行 '+el.querySelectorAll('.n-gk:not(.on)').length+'・'+kn);
+    let two=0; KOTEI.forEach(o=>{ if(all.items.indexOf(o)>=0||PKS.has(o.k)||document.querySelector('.n-cd[data-k="'+o.k+'"]')||PLB.querySelector('.n-gk[data-gk="'+o.k+'"]')) two++; }); if(two) bad.push('工程表の件が2か所に '+two); }
+  PLB.querySelectorAll('.n-pl[data-g]').forEach(c=>{ const sp=planNow().find(x=>String(x.n)===c.dataset.p), n=Number(c.dataset.g), rr=c.querySelectorAll('.n-plw .n-gk:not(.on)').length;   /* 10/17 第52.3版：まとめた項目の見出しの残り＝項目の件の数＝開いた中のまだの行の数 */
+    if(!sp||sp.os.length!==n||(c.querySelector('.cnt')||{}).textContent.indexOf('残り'+n)!==0||(c.classList.contains('open')&&rr!==n)) bad.push('まとめた項目 '+(sp?sp.os.length:'無い')+'・見出し '+n+'・開いた中 '+rr); });
+  const noBn=[...document.querySelectorAll('.n-cd, .n-gk, .n-dj, .n-pl:not(.al):not([data-g])')].filter(c=>!c.querySelector(':scope > .row .bn, :scope > .bd .bn, :scope > .row .m .bn')).length;   /* 10/17 第52.3版：日付（◯/◯ 発生）が出ていないカード（0のはず） */
+  { const PL=planNow(), nA=alertSteps().length, pr=PLB.querySelectorAll(':scope > .n-pl, .n-restw > .n-pl').length; if(PL.length+nA&&pr!==(S.rest?PL.length+nA:1)) bad.push('いま動くこと '+pr+'・'+(PL.length+nA)); }
+  if(g&&(g.old||[]).length){ const or=LS_.querySelectorAll('.n-oldw > .n-cd').length; if(!LS_.querySelector('.n-old')||S.old&&or!==g.old.length) bad.push('前の件 '+or+'・'+g.old.length); }
+  const nd=Object.keys(DUP).length; if(nd!==(bk.dup||0)) bad.push('同じ題 '+nd+'・'+(bk.dup||0));
+  window.__CHK={ok:!bad.length,bad,buckets:bk,kotei:KOTEI.length,noBorn:noBn,noBornItems:IT.length-IT.reduce((a,o)=>a+(o.it.bornS?1:0),0),bornIn:IT.reduce((a,o)=>a+(o.it.bornS&&o.it.bornIn?1:0),0),sumi:SUMI.length,daiji:DJB.querySelectorAll(':scope > .n-dj').length,dup:Object.keys(DUP).length,tabs:TABS.map(t=>[t.label,t.items.length,t.stale.length,t.waits.length]),items:IT.length};
+  if(bad.length&&!CHK_SENT){ CHK_SENT=true; const m='案件のタブの件数が合いません：'+bad.join('、'); try{ google.script.run.logClientError(m); }catch(e){} setTimeout(()=>sysWarn(['※'+m+'。社長に知らせてください']),0); } }
+// ── はじめに描く ──
+setHH(); addEventListener('resize',setHH);
+renderMine(); go(S.view); if(S.tab!=='all'){ const b=TB.querySelector('button.on'); if(b) TB.scrollLeft=Math.max(0,b.offsetLeft-TB.offsetLeft-84); }
+// パソコン：マウスでつかんで横に払う・回転で横に動く（押したことにはしない）
+function dragScroll(el){ let down=0,moved=0,x0=0,s0=0,lx=0,lt=0,v=0,raf=0;
+  el.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0) return; down=1; moved=0; x0=lx=e.clientX; s0=el.scrollLeft; lt=performance.now(); v=0; cancelAnimationFrame(raf); });
+  addEventListener('pointermove',e=>{ if(!down) return; const dx=e.clientX-x0; if(Math.abs(dx)>4) moved=1; el.scrollLeft=s0-dx; const now=performance.now(); if(now>lt) v=v*0.4+0.6*(e.clientX-lx)/(now-lt); lx=e.clientX; lt=now; });
+  addEventListener('pointerup',()=>{ if(!down) return; down=0; setTimeout(()=>{moved=0;},60); if(performance.now()-lt>80) v=0; let vel=v*16; const step=()=>{ if(Math.abs(vel)<0.3) return; el.scrollLeft-=vel; vel*=0.95; raf=requestAnimationFrame(step); }; raf=requestAnimationFrame(step); });
+  el.addEventListener('click',e=>{ if(moved){ e.stopPropagation(); e.preventDefault(); moved=0; } },true);
+  el.addEventListener('wheel',e=>{ if(Math.abs(e.deltaY)<=Math.abs(e.deltaX)) return; const max=el.scrollWidth-el.clientWidth, n=Math.max(0,Math.min(max,el.scrollLeft+e.deltaY)); if(n!==el.scrollLeft){ el.scrollLeft=n; e.preventDefault(); } },{passive:false}); }
+dragScroll(TB);
+// ── 完了のあとの帯（今の本物と同じ）──
+let TOAST=null, TOAST_T=null;
+function toast(msg,acts,k,stay){ if(TOAST) TOAST.remove(); clearTimeout(TOAST_T); const t=h('div','toast'); t.append(h('div','tm',msg)); const row=h('div','tb2');
+  const close=()=>{ t.remove(); if(TOAST===t) TOAST=null; }; const later=(ms)=>{ clearTimeout(TOAST_T); TOAST_T=setTimeout(close,ms); };
+  (acts||[]).forEach(([l,f])=>{ const b=h('button',null,l); b.type='button'; row.append(b);
+    b.onclick=()=>{ if(f==='memo'){ row.hidden=true; const a=h('div','ask'); const i=h('input'); i.placeholder='何を決めた？理由もひとこと'; const g=h('button','doneok','残す'); g.type='button'; a.append(i,g); t.append(a); i.focus(); clearTimeout(TOAST_T);
+        const go3=()=>{ const v=i.value.trim(), cur=DONE[k]; if(v&&cur) save(k,Object.assign({},cur,{memo:v})); close(); }; g.onclick=go3; i.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing) go3(); }); return; }
+      if(f()) close(); }; });
+  if(row.childNodes.length) t.append(row); document.body.append(t); TOAST=t;
+  if(stay){ t.classList.add('stay'); const off=e=>{ if(!t.isConnected){ document.removeEventListener('click',off,true); return; } if(t.contains(e.target)||!e.target.closest('button,a,[data-act],[data-pact],select,input,textarea')) return; document.removeEventListener('click',off,true); close(); }; setTimeout(()=>document.addEventListener('click',off,true),0); return; }   /* 10/17 統括：外したあとの「元に戻す」は、次に何かを押すか開き直すまで残す */
+  t.addEventListener('pointerdown',()=>later(20000)); later(10000); }
+// ── 開く速さの記録（今と同じ）──
+{ const ms=Math.round(performance.now()), O=window.__OPEN||{}, st=O.stat, sec=(x)=>(x/1000).toFixed(1)+'秒';
+  VER.textContent=VER_LABEL.replace(/^みんなのペライチ /,'').replace(/（案件のタブ）/,'')+'・'+sec(ms);
+  gs('logOpen',O.server||0,ms).catch(()=>{}); }
+// ── 最新の内容にする（今の「更新」と同じ働き）──
+const rm=document.getElementById('relmsg'); const say=(t,busy0)=>{ rm.hidden=false; rm.classList.remove('err'); rm.textContent=t; rm.classList.toggle('busy',!!busy0); setHH(); };
+const reload=()=>{ if(window.__appReload){ window.__appReload(); return; } const u=window.__URL||''; if(!u){ location.reload(); return; } const a=document.createElement('a'); a.href=u; a.target='_top'; document.body.append(a); a.click(); say('更新中…',1); setTimeout(()=>{ a.click(); },15000); };
+const waitImport=(since)=>{ const tick=async()=>{ const sec=Math.max(0,Math.round((Date.now()-since)/1000)), m=Math.floor(sec/60), el=sec<60?sec+'秒':m+'分';
+    try{ const st=await gs('importState'); const a=JSON.parse(st.apply||'{}');
+      if(a.at&&a.at>since){ let c=null; try{ c=await gs('pageChanged',window.__STAMP||''); }catch(e){}
+        if(!c||c.changed){ say('更新中…',1); reload(); return; }
+        say('最新です'); setTimeout(()=>{ rm.hidden=true; setHH(); },2000); return; } }catch(e){}
+    if(m>=15){ reload(); return; }
+    say('更新中…（'+el+'）',1); setTimeout(tick,10000); };
+  tick(); };
+if(D.importing) waitImport(D.importing);
+async function doUpdate(){ if(window.__appUpdate){ window.__appUpdate(); return; }
+  say('更新中…',1); let r=null; try{ r=await gs('rebuild',window.__STAMP||''); }catch(e){ reload(); return; }
+  if(r&&r.changed){ reload(); return; }
+  if(r&&r.fire==='started'||r&&r.fire==='running'){ waitImport(r.since||Date.now()); return; }
+  say('最新です'); setTimeout(()=>{ rm.hidden=true; setHH(); },2000); }
+if(window.__STALE) setTimeout(doUpdate,300);
+{ const lg=document.getElementById('nm'); lg.setAttribute('role','button'); lg.title='押すと更新'; lg.addEventListener('click',()=>doUpdate()); }   // 10/11 社長「ロゴを押したら更新」
+
+// ── 2本指で拡大・縮小（第48版・10/11 社長「PDFや画像のように拡大・縮小。目が悪い人でも、文字を大きくしすぎずに読める」）──
+//  アプリは画面を内側の枠（iframe）に出すので、ふつうのピンチが効かないことがある。中身（#page）だけを、折り返しを変えずに拡大し、縦横に動かせるようにする。
+//  指を動かしている間は絵として拡大（軽い）、指を離したときに本当の大きさに直す。上の帯・下のボタン・下から出る窓は大きくしない。1.05倍より小さければ元に戻す
+{ const MIN=1, MAX=3; let z=1, base=0, g=null;
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY), mid=t=>[(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2];
+  const org=()=>{ const r=P.getBoundingClientRect(); return [r.left+scrollX, r.top+scrollY]; };   // 中身の左上（ページの中の位置）
+  const setZ=(nz,fx,fy)=>{ const [ox,oy]=org(), px=(scrollX+fx-ox)/z, py=(scrollY+fy-oy)/z;   // 指の下にある中身の点
+    z=nz<1.05?1:Math.min(MAX,nz);
+    if(z===1){ P.style.zoom=''; P.style.width=''; document.body.style.minWidth=''; } else { P.style.width=base+'px'; P.style.zoom=String(z); document.body.style.minWidth=Math.ceil(base*z+2*Math.max(0,P.offsetLeft))+'px'; }
+    document.documentElement.classList.toggle('zoomed',z!==1);
+    const [ox2,oy2]=org(); scrollTo(Math.max(0,px*z+ox2-fx), Math.max(0,py*z+oy2-fy)); };
+  document.addEventListener('touchstart',e=>{ if(e.touches.length!==2||CP) return; if(z===1) base=P.getBoundingClientRect().width; const [fx,fy]=mid(e.touches); g={d:dist(e.touches),fx,fy,r:1}; const [ox,oy]=org(); P.style.transformOrigin=((scrollX+fx-ox)/z)+'px '+((scrollY+fy-oy)/z)+'px'; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(!g||e.touches.length!==2) return; e.preventDefault(); const r=Math.max(MIN/z,Math.min(MAX/z,dist(e.touches)/g.d)); g.r=r; P.style.transform='scale('+r+')'; },{passive:false});
+  const end=()=>{ if(!g) return; const r=g.r, fx=g.fx, fy=g.fy; g=null; P.style.transform=''; P.style.transformOrigin=''; if(Math.abs(r-1)>0.01) setZ(z*r,fx,fy); };
+  document.addEventListener('touchend',e=>{ if(e.touches.length<2) end(); },{passive:true}); document.addEventListener('touchcancel',end,{passive:true});
+  ['gesturestart','gesturechange'].forEach(n=>document.addEventListener(n,e=>e.preventDefault(),{passive:false}));   // iPhone の Safari で、ふつうのピンチと二重に動かない
+  addEventListener('resize',()=>{ if(z!==1&&!g) setZ(1,0,0); });   // 横向きにしたときは元に戻す
+  window.__zoom=(nz,fx,fy)=>{ if(z===1) base=P.getBoundingClientRect().width; setZ(nz,fx||0,fy||0); return z; };   // 試し用
+}
+// ── 上の帯：下へ読み進めると隠れ、少し戻すと出る（第48版・10/11 社長「ウェブでよくあるあの動き」）──
+//  案件のタブ・下のタブは、帯が出ているときは帯の下に、隠れているときは画面のいちばん上に貼り付く（--st）。
+//  隠さないとき：いちばん上の近く・知らせ（保存できなかった等）が出ている・案件のページや下から出る窓を開いている
+{ let lastY=scrollY, hid=false, tick=false; const TBW0=document.querySelector('.n-tbw');
+  const setTH=()=>{ if(TBW0) document.documentElement.style.setProperty('--th',TBW0.offsetHeight+'px'); };
+  const setHid=(v)=>{ if(v===hid) return; hid=v; hdr.classList.toggle('hid',v); if(v) document.documentElement.style.setProperty('--st','0px'); else document.documentElement.style.removeProperty('--st'); };   // 出ているときは帯の高さ（--hh。知らせが出て帯が伸びても合う）
+  const keep=()=>{ const m=document.getElementById('relmsg'); return (m&&!m.hidden)||!!document.querySelector('.n-cp,.n-sheet,.gn-modal,.ks-wrap'); };
+  const run=()=>{ tick=false; const y=scrollY, dy=y-lastY; if(Math.abs(dy)<6&&y>hdr.offsetHeight) return; lastY=y;
+    if(y<=hdr.offsetHeight*2||dy<0||keep()) setHid(false); else if(dy>0) setHid(true); };
+  addEventListener('scroll',()=>{ if(!tick){ tick=true; requestAnimationFrame(run); } },{passive:true});
+  addEventListener('resize',setTH); setTH();
+  window.__hdr=()=>({hid, st:getComputedStyle(document.documentElement).getPropertyValue('--st'), th:getComputedStyle(document.documentElement).getPropertyValue('--th')});   // 試し用
+}
+})();
+</script>
+</body></html>
