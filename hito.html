@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一言</title>
+<!-- 端の窓（一言の小窓）10/23 社長の決定 K130〜K133・設計 docs/設計_端の窓_本番_20261023.md
+     ・ペライチの［小窓］で、いつも上に出る小窓（幅240×高さ200）の中に出る。見本 端の窓_見本/小窓.html の形
+     ・手元の鍵（localStorage pc_auth）で入口に直接聞く（大きな窓を最小化しても遅れない）。鍵は消さない（消すのは大きな窓）
+     ・送る・見たは、押した瞬間に画面に出し、裏で1つずつ送る（届くまで送り直す。同じ番号は本体で1行だけ） -->
+<style>
+:root{ --bg:#fff; --ink:#1B1F2E; --sub:#5A6072; --faint:#8E94A4; --line:#E1E4EB; --do:#3B7DDD; --hot:#D6334F; --soft:#F3F5F9; --mine:#EAF1FC; }
+@media (prefers-color-scheme: dark){ :root{ --bg:#1A1D26; --ink:#EEF0F5; --sub:#AEB4C3; --faint:#7C8394; --line:#2A2E39; --hot:#FF6680; --soft:#151821; --mine:#1E2A40; } }
+*{ box-sizing:border-box; } [hidden]{ display:none !important; }
+html,body{ margin:0; height:100%; }
+body{ background:var(--bg); color:var(--ink); font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo UI",Meiryo,"Noto Sans JP",sans-serif; font-size:14px; line-height:1.45; display:flex; flex-direction:column; padding:8px 8px 6px; gap:6px; overflow:hidden; }
+button{ font:inherit; color:inherit; cursor:pointer; }
+.names{ flex:none; display:flex; gap:5px; white-space:nowrap; position:relative; }
+.nm{ flex:none; font-size:13px; border:1px solid var(--line); border-radius:99px; padding:2px 10px; background:var(--soft); }
+.nm[aria-pressed="true"]{ background:var(--do); border-color:var(--do); color:#fff; font-weight:700; }
+.nm.more{ padding:2px 8px; }
+.names.shake{ animation:sh .35s; } @keyframes sh{ 25%{ transform:translateX(-4px); } 75%{ transform:translateX(4px); } }
+#others{ position:absolute; top:28px; right:0; z-index:5; background:var(--bg); border:1px solid var(--line); border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.18); padding:6px; display:flex; flex-wrap:wrap; gap:5px; width:200px; }
+#msgs{ flex:1; min-height:0; overflow-y:auto; }
+.msg{ display:flex; gap:5px; align-items:baseline; padding:3px 2px; border-radius:6px; cursor:pointer; }
+.msg:hover{ background:var(--soft); }
+.msg + .msg{ margin-top:2px; }
+.msg b{ flex:none; font-size:13px; }
+.nw{ flex:none; font-size:13px; font-weight:700; color:#fff; background:var(--do); border-radius:4px; padding:0 4px; line-height:1.45; }
+.msg .t{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg.new .t{ font-weight:700; }
+.msg.read, .msg.read b{ color:var(--faint); }
+.msg .tm{ flex:none; font-size:13px; color:var(--faint); }
+.msg.ng .tm{ color:var(--hot); font-weight:700; }
+.empty{ color:var(--faint); font-size:13px; padding:3px 2px; }
+#thread{ flex:1; min-height:0; display:flex; flex-direction:column; gap:4px; }
+.th-top{ flex:none; display:flex; gap:6px; align-items:center; }
+.back{ flex:none; border:1px solid var(--line); background:var(--soft); border-radius:7px; font-size:13px; padding:1px 8px; }
+.th-top b{ flex:1; min-width:0; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#lines{ flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding-right:2px; }
+.ln{ max-width:88%; padding:3px 7px; border-radius:8px; background:var(--soft); align-self:flex-start; word-break:break-word; }
+.ln.me{ background:var(--mine); align-self:flex-end; }
+.ln time{ display:block; font-size:13px; color:var(--faint); line-height:1.3; }
+.ln.ng{ outline:1.5px solid var(--hot); }
+.rep{ flex:none; display:flex; gap:4px; }
+.rep button{ flex:1; min-width:0; font-size:13px; padding:3px 0; border:1px solid var(--do); color:var(--do); background:var(--bg); border-radius:7px; white-space:nowrap; }
+.rep button:active{ background:var(--do); color:#fff; }
+textarea{ flex:none; font:inherit; font-size:14px; width:100%; height:34px; max-height:76px; padding:6px 8px; border-radius:7px; border:1.5px solid var(--do); background:var(--bg); color:var(--ink); resize:none; display:block; }
+textarea:focus{ outline:none; box-shadow:0 0 0 3px rgba(59,125,221,.18); }
+.foot{ flex:none; font-size:13px; color:var(--faint); min-height:19px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.foot.ng{ color:var(--hot); font-weight:700; } .foot.ok{ color:var(--do); }
+.foot button{ background:none; border:0; padding:0 0 0 6px; font-size:13px; color:var(--do); text-decoration:underline; }
+body.th .names, body.th #msgs{ display:none; }
+body.stopped .names, body.stopped #msgs, body.stopped #thread, body.stopped textarea{ display:none !important; }
+#stop{ display:none; flex:1; align-items:center; justify-content:center; text-align:center; color:var(--sub); font-size:13px; }
+body.stopped #stop{ display:flex; }
+</style>
+</head>
+<body>
+<div class="names" id="names"></div>
+<div id="msgs"></div>
+<div id="thread" hidden><div class="th-top"><button class="back" id="back" title="戻る（Esc）">‹ 戻る</button><b id="thWho"></b></div><div id="lines"></div>
+  <div class="rep" id="rep"><button type="button">了解</button><button type="button">対応中</button><button type="button">相談したい</button></div></div>
+<textarea id="ta" rows="1" aria-label="一言"></textarea>
+<div id="stop"></div>
+<div class="foot" id="st"></div>
+<script src="config.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const POLL_MS = 15000, POLL_TO = 20000, SEND_TO = 30000, MAX = 200, H0 = 7, H1 = 21;   // 聞く間隔・打ち切り・字数・聞く時間（7〜21時）
+const RETRY = [5000, 15000, 45000];                                                     // 送れなかったときの送り直し（3回までは自動）
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const LS = { get(k, d){ try{ const v = localStorage.getItem('pc_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+             set(k, v){ try{ localStorage.setItem('pc_' + k, JSON.stringify(v)); }catch(e){} } };
+const hm = t => { const d = new Date(t); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
+const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+const AUTH = LS.get('auth', null);
+
+let S = LS.get('hito_last', null) || { n: '', me: '', people: [], list: [] };   // 前に聞いた一覧（開いた瞬間に出す）
+let Q = LS.get('hito_q', []);          // 送る待ち [{ id, to, text, re, at, st }]
+let SQ = LS.get('hito_seen', []);      // 見たの送る待ち（番号）
+let say = LS.get('hito_draft', null) || { to: '', text: '' };
+let TH = '', othersOpen = false, polling = false, sending = false, fails = 0, failAt = 0, keyNg = 0, stT = 0, pollT = 0;
+const saveQ = () => { LS.set('hito_q', Q); LS.set('hito_seen', SQ); };
+const keep = () => LS.set('hito_draft', say);
+
+// ── 入口へ（20〜30秒で打ち切り。鍵の ng は 'key'、ほかの ng はつながらない扱い） ──
+async function post(fn, args, id, ms){
+  const url = AUTH && window.CFG && CFG.gate[AUTH.site]; if (!url) throw { net: true, m: '入口がありません' };
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+  let j; try{ const r = await fetch(url, { method: 'POST', body: JSON.stringify({ op: 'call', key: AUTH.key, fn: fn, args: args, id: id || '' }), signal: ac.signal }); j = await r.json(); }
+  catch(e){ throw { net: true, m: 'つながりません' }; } finally{ clearTimeout(t); }
+  if (j && j.ng === 'key') throw { key: true, m: j.msg || '鍵' };
+  if (!j || j.ng || !j.ok) throw { net: /^ペライチにつながりませんでした|混み合って|読めませんでした/.test(String(j && j.ng || '')) || !j, m: String((j && j.ng) || '答えがありません') };
+  return j.r;
+}
+
+const name = e => { const p = S.people.filter(x => x.email === e)[0]; return p ? p.name : String(e || '').split('@')[0]; };
+const isNew = m => !m.out && !m.seen && SQ.indexOf(m.id) < 0;
+// 一覧：送る待ち（まだ本体の一覧に無い物）を上に重ねる。新しい順
+function all(){
+  const have = {}; S.list.forEach(m => { have[m.id] = 1; });
+  const mine = Q.filter(q => !have[q.id]).map(q => ({ id: q.id, at: hm(q.at), p: q.to, out: true, text: q.text, seen: true, st: q.st }));
+  return mine.reverse().concat(S.list);
+}
+function count(){ const n = S.list.filter(isNew).length; document.title = n ? '一言 ' + n : '一言'; try{ parent.postMessage({ hito: 'n', n: n }, '*'); }catch(e){} return n; }
+
+function paintNames(){
+  const box = $('names'), L = all(), last = {}; L.forEach((m, i) => { if (last[m.p] == null) last[m.p] = i; });
+  const ps = S.people.filter(p => !p.stop).map((p, i) => ({ p: p, k: last[p.email] != null ? last[p.email] : 1000 + i })).sort((a, b) => a.k - b.k).map(x => x.p);
+  if (!ps.length) { box.innerHTML = '<span class="empty">' + (S.me ? '話しかけられる人がいません' : '読み込んでいます…') + '</span>'; return; }
+  const btn = p => '<button class="nm" data-e="' + esc(p.email) + '" aria-pressed="' + (!TH && say.to === p.email) + '">' + esc(p.name) + '</button>';
+  box.innerHTML = ps.map(btn).join('');
+  const W = box.clientWidth; let fit = ps.length;
+  if (box.scrollWidth > W) { box.insertAdjacentHTML('beforeend', '<button class="nm more" id="more">他</button>'); const mw = $('more').offsetWidth + 5; let x = 0; fit = 0;
+    for (const b of box.querySelectorAll('.nm[data-e]')) { x += b.offsetWidth + 5; if (x + mw > W) break; fit++; } }
+  let head = ps.slice(0, fit), tail = ps.slice(fit);
+  const sel = tail.filter(p => p.email === say.to)[0]; if (sel && head.length) { tail = tail.filter(p => p !== sel); tail.unshift(head.pop()); head.push(sel); }
+  box.innerHTML = head.map(btn).join('') + (tail.length ? '<button class="nm more" id="more" aria-expanded="' + othersOpen + '">他 ' + tail.length + '</button><div id="others"' + (othersOpen ? '' : ' hidden') + '>' + tail.map(btn).join('') + '</div>' : '');
+}
+function paint(){
+  document.body.classList.toggle('th', !!TH); $('thread').hidden = !TH;
+  if (TH) paintThread(); else {
+    paintNames();
+    const L = all();
+    $('msgs').innerHTML = L.length ? L.map(m => '<div class="msg' + (isNew(m) ? ' new' : m.out ? '' : ' read') + (m.st === '未送信' ? ' ng' : '') + '" data-p="' + esc(m.p) + '" data-id="' + esc(m.id) + '" title="押すと、この人とのやり取り">' +
+        '<b>' + (m.out ? '→' : '') + esc(name(m.p)) + '</b>' + (isNew(m) ? '<span class="nw">新</span>' : '') + '<span class="t">' + esc(m.text) + '</span><span class="tm">' + esc(m.st || m.at) + '</span></div>').join('')
+      : '<div class="empty">' + (S.me ? '今日の一言はまだありません' : '読み込んでいます…') + '</div>';
+  }
+  const ta = $('ta');
+  ta.placeholder = (TH || say.to) ? name(TH || say.to) + 'へ（Enterで送る）' : '名前を押して一言';
+  if (ta.value !== (say.text || '')) ta.value = say.text || '';
+  fit(); count(); netNote();
+}
+function paintThread(){
+  $('thWho').textContent = name(TH);
+  const ms = all().filter(m => m.p === TH).reverse(), box = $('lines'), atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 4;
+  box.innerHTML = ms.map(m => '<div class="ln' + (m.out ? ' me' : '') + (m.st === '未送信' ? ' ng' : '') + '"><time>' + esc(m.at) + (m.st ? ' ' + m.st : '') + '</time>' + esc(m.text) + '</div>').join('') || '<div class="empty">今日のやり取りはまだありません</div>';
+  if (atEnd || box.__w !== TH) { box.scrollTop = box.scrollHeight; box.__w = TH; }
+}
+function fit(){ const ta = $('ta'); ta.style.height = '34px'; ta.style.height = Math.min(76, Math.max(34, ta.scrollHeight + 3)) + 'px'; }
+function status(t, cls, ms, html){ const s = $('st'); if (html) s.innerHTML = t; else s.textContent = t; s.className = 'foot' + (cls ? ' ' + cls : ''); clearTimeout(stT); if (ms) stT = setTimeout(() => { status('', ''); netNote(); }, ms); }
+function netNote(){
+  const ng = Q.filter(q => q.st === '未送信');
+  if (ng.length) { const tx = (ng[0].why || '送れませんでした') + (ng.length > 1 ? '（' + ng.length + '件）' : ''); if ($('again') && $('st').textContent.indexOf(tx) === 0) return;   /* 同じ知らせは作り直さない（押している途中で消さない） */
+    status(tx + ' <button id="again">もう一度</button>', 'ng', 0, true);
+    $('again').onclick = () => { Q.forEach(x => { if (x.st === '未送信') { x.st = '送信中'; x.n = 0; x.wait = 0; x.why = ''; } }); saveQ(); status('', ''); paint(); pump(); }; return; }
+  if ($('again')) status('', '');
+  if ($('st').textContent) return; if (fails >= 2) status('つながりません（' + hm(failAt) + 'から）', 'ng'); else if (night()) status('夜は止めています（' + H0 + '時から）', ''); }
+function focusTa(){ const ta = $('ta'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+const night = () => { const h = new Date().getHours(); return h < H0 || h >= H1; };
+
+// ── 見た：話の流れを開いたとき・小窓に触れたときだけ。画面はその場で、書き込みは裏で（届くまで送り直す） ──
+function markSeen(ids){ const add = ids.filter(id => SQ.indexOf(id) < 0 && S.list.some(m => m.id === id && isNew(m))); if (!add.length) return 0; SQ = SQ.concat(add); saveQ(); pump(); return add.length; }
+function openThread(p){
+  TH = p; othersOpen = false;
+  if (say.to !== p) { say = { to: p, text: say.to === p ? say.text : '' }; keep(); }
+  paint(); focusTa();
+  if (markSeen(S.list.filter(m => m.p === p).map(m => m.id))) paint();
+}
+function closeThread(){ TH = ''; say = { to: '', text: say.text }; keep(); paint(); }
+
+$('names').onclick = e => { const b = e.target.closest('.nm'); if (!b) return;
+  if (b.id === 'more') { othersOpen = !othersOpen; paint(); return; }
+  othersOpen = false; const em = b.dataset.e;
+  say = say.to === em ? { to: '', text: say.text } : { to: em, text: say.text }; keep(); paint(); if (say.to) focusTa(); };
+$('msgs').onclick = e => { const el = e.target.closest('.msg'); if (el) openThread(el.dataset.p); };
+$('back').onclick = closeThread;
+$('rep').onclick = e => { const b = e.target.closest('button'); if (b && TH) send(b.textContent, TH); };
+$('ta').oninput = e => { say.text = e.target.value; keep(); fit(); const n = say.text.length; if (n > MAX - 40) status(n + '/' + MAX, n > MAX ? 'ng' : ''); else if ($('st').textContent.indexOf('/' + MAX) > 0) status('', ''); };
+$('ta').onkeydown = e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); send(); }   // 変換を確定する Enter では送らない
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (TH) closeThread(); else if (say.to) { say = { to: '', text: say.text }; keep(); paint(); } }
+};
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.activeElement !== $('ta')) { if (TH) closeThread(); else if (othersOpen) { othersOpen = false; paint(); } } });
+document.addEventListener('pointerdown', e => {
+  if (!e.target.closest('.msg') && !TH) { const ids = [...document.querySelectorAll('.msg.new')].map(x => x.dataset.id); if (markSeen(ids)) setTimeout(paint, 0); }
+  if (night()) poll();   // 夜は、触れたときだけ聞く
+}, true);
+
+// ── 送る：押した瞬間に自分の一覧へ。裏で1つずつ（前の答えか打ち切りを待ってから次） ──
+function send(text, to){
+  const t = String(text != null ? text : say.text || '').trim(); to = to || TH || say.to;
+  if (!t) return;
+  if (!to) { status('だれに？ 名前を押してください', 'ng', 3000); const n = $('names'); n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); return; }
+  if (t.length > MAX) { status(MAX + '字までです（いま' + t.length + '字）', 'ng'); return; }
+  const last = S.list.filter(m => m.p === to && !m.out)[0];
+  Q.push({ id: rid(), to: to, text: t, re: last ? last.id : '', at: Date.now(), st: '送信中', n: 0 }); saveQ();
+  if (text == null) { say = TH ? { to: to, text: '' } : { to: '', text: '' }; keep(); }
+  if (last) markSeen([last.id]);
+  paint(); if (TH) focusTa(); else status(name(to) + 'へ', 'ok', 2000);
+  pump();
+}
+async function pump(){
+  if (sending) return; sending = true;
+  try{
+    while (Q.some(q => q.st === '送信中' && !(q.wait > Date.now())) || SQ.length) {
+      const q = Q.filter(x => x.st === '送信中' && !(x.wait > Date.now()))[0];
+      if (q) {
+        try{ await post('hitoSend', [q.id, q.to, q.text, q.re], q.id, SEND_TO); q.st = ''; saveQ(); fails = 0; S.n = ''; poll(true); }   // 送れた一言は、本体の一覧に入るまで手元に残す（一瞬消えない）
+        catch(e){
+          if (e.net && q.n < RETRY.length) { q.wait = Date.now() + RETRY[q.n]; q.n++; saveQ(); setTimeout(pump, RETRY[q.n - 1] + 50); }
+          else { q.st = '未送信'; q.why = e.net ? '' : e.m; saveQ(); }
+          paint(); if (!e.net) continue; break;
+        }
+        paint(); continue;
+      }
+      const ids = SQ.slice(0, 50);
+      try{ await post('hitoSeen', [ids], '', POLL_TO); SQ = SQ.filter(x => ids.indexOf(x) < 0); saveQ(); }
+      catch(e){ setTimeout(pump, 15000); break; }
+    }
+  } finally{ sending = false; }
+}
+
+// ── 聞く：15秒ごと（7〜21時）。前の聞きが終わるまで次を出さない。数が変わったときだけ一覧 ──
+let again = false;
+async function poll(soon){
+  if (polling) { if (soon) again = true; return; } if (!AUTH) return; polling = true;
+  try{
+    const r = await post('hitoPoll', [S.n || ''], '', POLL_TO);
+    keyNg = 0; if (fails >= 2 && !$('again')) status('', ''); fails = 0;
+    if (r && r.off) { stop('一言を使えるようになっていません'); return; }
+    if (r && !r.same) {
+      S = { n: r.n, me: r.me, people: r.people || [], list: r.list || [] };
+      Q = Q.filter(q => q.st || (!S.list.some(m => m.id === q.id) && new Date(q.at).toDateString() === new Date().toDateString()));   // 本体の一覧に入った送った一言は手元から外す
+      SQ = SQ.filter(id => S.list.some(m => m.id === id && !m.seen)); saveQ();   // 本体で見たになった分は外す
+      LS.set('hito_last', S);
+      const a = document.activeElement, p = a && a.id === 'ta' ? a.selectionStart : -1;
+      paint(); if (p >= 0) { $('ta').focus(); $('ta').setSelectionRange(p, p); }
+    }
+    netNote();
+  }catch(e){
+    if (e.key) { keyNg++; if (keyNg >= 2) stop('アプリで、はじめの設定をやり直してください'); else setTimeout(poll, 60000); }   // 鍵は消さない。1分後にもう1回確かめてから止まる
+    else { fails++; if (fails === 2) failAt = Date.now(); netNote(); }
+  } finally{ polling = false; if (again) { again = false; setTimeout(poll, 0); } }
+}
+function stop(t){ clearInterval(pollT); document.body.classList.add('stopped'); $('stop').textContent = t; }
+function tick(){ if (!night()) poll(); else netNote(); }
+window.addEventListener('resize', () => { if (!TH) paintNames(); });
+window.addEventListener('focus', () => poll());
+if (!AUTH) stop('アプリで、はじめの設定をしてください');
+else { paint(); poll(); pollT = setInterval(tick, POLL_MS); Q.forEach(q => { if (q.st && q.st !== '未送信') { q.st = '送信中'; q.n = 0; q.wait = 0; } }); saveQ();   /* 開き直したら、送る途中の一言は最初から送り直す */ if (Q.length || SQ.length) pump(); }
+if (say.to) focusTa();
+})();
+</script>
+</body>
+</html>
